@@ -14,7 +14,7 @@ from selfrag import SelfRAG
 #   $env:OPENAI_API_KEY="sk-..."
 # cmd.exe:
 #   set OPENAI_API_KEY=sk-...
-OPENAI_API_KEY_FALLBACK = "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"  # optional: paste YOUR key here (not recommended)
+OPENAI_API_KEY_FALLBACK = "<API_KEY>"
 
 
 def make_client() -> OpenAI:
