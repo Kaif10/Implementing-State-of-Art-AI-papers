@@ -73,9 +73,7 @@ class Beam:
     done: bool = False
 
 
-# ---------------------------
-# Self-RAG (robust + faithful inference loop)
-# ---------------------------
+# Self-RAG inference loop
 
 class SelfRAG:
     """
@@ -160,8 +158,7 @@ Return RetrieveDecision (decision, query).""",
     def generate_candidates(self, question: str, draft: str, passages: List[Chunk]) -> CandidateBatch:
         passages_txt = "\n\n".join(_format_passage(p) for p in passages)
 
-        # This rubric fixes your "Restricted data" failure: it forces the model to score
-        # the *definition/list* higher than a random constraint sentence.
+    
         resp = self.client.responses.parse(
             model=self.gen_model,
             temperature=self.temperature,
@@ -220,7 +217,7 @@ Return CandidateBatch.""",
         return batch
 
     def generate_noctx(self, question: str, draft: str) -> NoCtxStep:
-        # No-context is a hallucination trap; this refuses to invent doc-specific facts.
+        
         resp = self.client.responses.parse(
             model=self.gen_model,
             temperature=self.temperature,
@@ -256,9 +253,8 @@ Rules:
         out.isuse = max(1, min(5, int(out.isuse)))
         return out
 
-    # ---------------------------
+
     # Scoring / selection
-    # ---------------------------
 
     def _score_candidate(self, c: Candidate) -> float:
         return (
@@ -277,19 +273,17 @@ Rules:
             return False
         return True
 
-    # ---------------------------
+  
     # Public API
-    # ---------------------------
+   
 
     def answer(self, question: str, *, beam_size: int = 1) -> str:
         if beam_size <= 1:
             return self._answer_greedy(question)
         return self._answer_beam(question, beam_size)
-
-    # ---------------------------
+ 
     # Greedy (beam=1)
-    # ---------------------------
-
+  
     def _answer_greedy(self, question: str) -> str:
         draft: List[str] = []
         ctx: List[Chunk] = []
@@ -334,9 +328,8 @@ Rules:
 
         return " ".join(draft).strip()
 
-    # ---------------------------
+   
     # Segment-level beam search (paper-style)
-    # ---------------------------
 
     def _answer_beam(self, question: str, beam_size: int) -> str:
         beams: List[Beam] = [Beam(draft=[], ctx=[], score=0.0, done=False)]

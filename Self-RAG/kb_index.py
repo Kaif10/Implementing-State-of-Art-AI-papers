@@ -13,9 +13,7 @@ import numpy as np
 from openai import OpenAI
 
 
-# ---------------------------
 # Data
-# ---------------------------
 
 @dataclass(frozen=True)
 class Chunk:
@@ -32,9 +30,8 @@ class Meta:
     chunks: List[Chunk]
 
 
-# ---------------------------
+
 # Docs + chunking
-# ---------------------------
 
 def chunk_text(text: str, size_chars: int = 3000, overlap_chars: int = 300) -> List[str]:
     text = re.sub(r"\s+", " ", text).strip()
@@ -68,9 +65,8 @@ def list_docs(folder: str) -> List[str]:
     return sorted(set(files))
 
 
-# ---------------------------
+
 # Embeddings + FAISS
-# ---------------------------
 
 def _l2_normalize(x: np.ndarray) -> np.ndarray:
     n = np.linalg.norm(x, axis=1, keepdims=True)
@@ -113,10 +109,8 @@ def _faiss_search(index: faiss.Index, q: np.ndarray, top_k: int) -> List[int]:
     return [int(i) for i in ids[0] if int(i) != -1]
 
 
-# ---------------------------
-# KB wrapper
-# ---------------------------
 
+# KB wrapper
 class FaissKB:
     def __init__(self, index: faiss.Index, meta: Meta, embedder: Embedder):
         self.index = index

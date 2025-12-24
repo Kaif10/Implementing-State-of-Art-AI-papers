@@ -1,0 +1,50 @@
+[INTERNAL DOSSIER — OPERATION "MIDNIGHT LANTERN"]
+
+This file is intentionally padded with irrelevant chatter to simulate a long archive.
+
+--- FIELD CHATTER (irrelevant) ---
+Agent: The rain is horizontal again.
+Handler: Copy. Keep your head down.
+Agent: I saw a cat. It did not look friendly.
+Handler: Focus.
+
+--- LOGISTICS (mostly irrelevant) ---
+Codenames in circulation:
+- "Lantern" (unknown identity)
+- "Cinder" (unknown identity)
+- "Orchid" (unknown identity)
+
+Random notes:
+- Coffee was cold.
+- Elevator makes a strange noise.
+- Someone left a chessboard in the lobby.
+
+--- PERSONNEL SNAPSHOT ---
+Known personnel aliases:
+- "Orchid" is Mira Vance.
+- "Cinder" is Jonas Pike.
+- "Lantern" is unknown.
+
+--- MORE PADDING ---
+FILLER: The city has too many bridges.
+FILLER: Someone whistled the wrong tune.
+FILLER: A file cabinet was labeled "taxes".
+FILLER: This sentence exists to be ignored.
+FILLER: Nothing important here.
+FILLER: Still nothing important here.
+FILLER: Absolutely nothing important here.
+
+--- ACCESS MAP (restricted) ---
+Badge routing table:
+- Mira Vance -> Badge ID MV-17
+- Jonas Pike -> Badge ID JP-44
+- (no entry for Lantern)
+
+Security clearance mapping:
+- MV-17 -> Clearance Tier 2
+- JP-44 -> Clearance Tier 4
+
+--- FINAL ENCRYPTED NOTE ---
+IMPORTANT: The dead-drop locker code is: UMBRA-9-DELTA.
+
+End of file.

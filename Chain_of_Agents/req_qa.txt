@@ -1,0 +1,3 @@
+You must answer using ONLY the provided text.
+If the answer is not explicitly stated, output: not mentioned
+Return ONLY the answer, no explanation.

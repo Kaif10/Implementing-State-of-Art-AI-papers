@@ -6,9 +6,7 @@ import textwrap
 from openai import OpenAI
 import os
 
-os.environ["OPENAI_API_KEY"] = "<API_KEY>"
-
-
+os.environ["OPENAI_API_KEY"] = "your_key_here"
 
 @dataclass
 class Task:
@@ -108,9 +106,8 @@ def parse_json_object(raw: str, required_keys: tuple[str, ...] = ()) -> dict | N
         return obj
     return None
 
+# Roles.
 
-
-# Roles
 # Actor 
 def actor(llm: LLM, task: Task, memory: list[str]) -> tuple[str, str]:
     mem = ""
@@ -153,7 +150,6 @@ def actor(llm: LLM, task: Task, memory: list[str]) -> tuple[str, str]:
 
 
 #Judge (The original paper uses different hard evaluation criteria for each task; here we use a generic LLM based evaluator)
-
 def judge(llm: LLM, task: Task, answer: str) -> EvalResult:
     user = textwrap.dedent(f"""\
     You are grading whether the CANDIDATE ANSWER fully satisfies the TASK and any constraints in the CONTEXT.
@@ -211,7 +207,6 @@ def judge(llm: LLM, task: Task, answer: str) -> EvalResult:
     return EvalResult(passed, feedback)
 
 
-
 # reflector agent
 def reflect(llm: LLM, task: Task, trajectory: str, answer: str, ev: EvalResult) -> str:
     user = textwrap.dedent(f"""\
@@ -240,7 +235,6 @@ def reflect(llm: LLM, task: Task, trajectory: str, answer: str, ev: EvalResult) 
         temperature=0.0,
         max_tokens=160,
     )
-
 
 
 # Entire Reflexion loop (core)
