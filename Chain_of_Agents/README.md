@@ -1,73 +1,51 @@
-# Chain-of-Agents (CoA) — Minimal Core Method Implementation
+# Chain-of-Agents (CoA)
 
-This repo is a compact implementation of the **core methodology** from the paper:
-**"Chain of Agents: Large Language Models Collaborating on Long-Context Tasks" (NeurIPS 2024)**
+Paper: [Chain of Agents: Large Language Models Collaborating on Long-Context Tasks](https://arxiv.org/abs/2406.02818)
 
-Scope: **core logic only** (Algorithm 1 + Algorithm 2 + optional multi-path variants).  
-Not included: paper datasets, metrics, baselines, or experimental reproduction.
+## Algorithmic flow (paper)
 
----
+1) Split the long input into sentences and greedily chunk them under a token budget `k` (Algorithm 2).
+2) Run a chain of worker agents over chunks to produce Communication Units (CUs) in sequence (Algorithm 1).
+3) Pass the final CU to a manager agent to synthesize the final answer.
+4) Optionally run multi-path variants (bidir, perm5, self5) to explore different orderings or sampling.
+5) Select the final output by majority vote or a judge model.
 
-## What matches the paper (core methodology)
+## Exceptions in this repo
+- No paper datasets or evaluation harness are included.
 
-- **Algorithm 1 (CoA chain):** sequential worker chain producing Communication Units (CUs), then a manager produces the final answer.
-- **Algorithm 2 (chunking):** greedy sentence-wise chunking under a token budget `k`.
-- **Ordering strategies:** `ltr`, `rtl`, `perm`.
-- **Multi-path variants (paper Section 5.6):** `bidir`, `perm5`, `self5`.
-- **Selection:** `vote` (majority vote) and optional `judge`.
+## Run the code
 
-Project structure:
-- `coa/chunking.py`: Algorithm 2
-- `coa/coa.py`: Algorithm 1 + multipath orchestration
-- `coa/prompts.py`: worker/manager prompts from paper tables
-- `coa/llm.py`: thin wrapper around OpenAI Responses API + token counting
-- `run.py`: CLI entrypoint / wiring
-
----
-
-## Important paper underspecifications (implementation choices)
-
-These are places where the paper is **not fully specified**, so this repo makes explicit choices:
-
-### 1) Sentence splitting
-Algorithm 2 says "split into sentences" but does not specify how.  
-This repo uses a simple regex splitter (`(?<=[.!?])\s+`). If you care about tricky punctuation, abbreviations, or lists, swap in a stronger sentence tokenizer.
-
-### 2) Algorithm 2 budget vs `prev_cu` (CU growth)
-The worker prompt includes `prev_cu` (the previous CU), but Algorithm 2’s budget in the paper subtracts only `tokens(q)` and `tokens(Iw)` from `k`.
-
-This repo:
-- Implements Algorithm 2’s published budget **by default**.
-- Relies on `--max_output_tokens` to keep CUs from exploding (practical safeguard).
-- Provides an optional **token buffer** hook in `coa/chunking.py` to reserve room for `prev_cu` if you want more robustness:
-  - You can set `chunk_text.prev_cu_token_buffer = <int>` before running chunking.
-  - Note: reserving a buffer is a robustness choice beyond the paper pseudocode.
-
-### 3) Judge selector prompt
-The paper mentions judge-style selection but does not provide a canonical judge prompt.
-This repo includes a **minimal** judge prompt as a placeholder. Treat it as configurable, not “paper-canonical”.
-
----
-
-## SECURITY: API keys (do not publish keys)
-
-**Do not hardcode API keys into code or commit them to git.**
-
-Recommended:
-- Set `OPENAI_API_KEY` as an environment variable and use `client = OpenAI()`.
-
-If you already committed a key:
-1) Revoke/rotate it immediately.
-2) Remove it from git history before publishing.
-
----
-
-## Install
+1) Install deps
 
 ```bash
 python -m venv .venv
-# Windows PowerShell:
-#   .\.venv\Scripts\Activate.ps1
-# macOS/Linux:
-#   source .venv/bin/activate
+# PowerShell: .\.venv\Scripts\Activate.ps1
+# macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
+```
+
+2) Set your API key
+
+```powershell
+$env:OPENAI_API_KEY="sk-..."
+```
+
+3) Run a single-path chain
+
+```bash
+python run.py --input_file doc_test.txt --task_requirements_file req_qa.txt --query "Summarize the key constraints"
+```
+
+4) Run a multi-path variant (optional)
+
+```bash
+python run.py --input_file doc_test.txt --task_requirements_file req_qa.txt --query "Summarize the key constraints" --multipath bidir --selector vote
+```
+
+## Files
+
+- `coa/chunking.py`: Algorithm 2
+- `coa/coa.py`: Algorithm 1 and multipath orchestration
+- `coa/prompts.py`: worker/manager prompts from paper tables
+- `coa/llm.py`: OpenAI Responses API wrapper and token counting
+- `run.py`: CLI entry point

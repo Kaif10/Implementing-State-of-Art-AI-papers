@@ -1,32 +1,30 @@
 # Self-RAG (Practical Implementation)
 
-This folder contains a minimal, working implementation of the Self-RAG paper with a few pragmatic changes:
-- no finetuned model or reflection tokens/logprobs
-- reflection labels are emitted via JSON parsing (`responses.parse`) instead
-- a single generator handles both generation + self-evaluation (no separate critic at inference)
+Paper: [Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection](https://arxiv.org/abs/2310.11511)
 
-The goal is to keep the core behavior (retrieve/reflect/ground) while staying simple and hackable.
+## Algorithmic flow (paper)
 
-## What this implements from the paper
+1) Start with a query and the current partial answer.
+2) Before generating each next sentence, decide whether the need to retrieve (`RetrieveDecision`).
+3) If retrieving, fetch top passages; if not, continue with the model alone.
+4) For each passage, generate a candidate next sentence while emitting reflection labels:
+   - `isrel` (relevance), `issup` (support), `isuse` (usefulness).
+5) Score and filter candidates with hard gates/logic for irrelevant or unsupported content.
+6) Append the best candidate sentence to the answer.
+7) Repeat until an `is_final` stop condition or a max-step limit is reached.
+8) Optionally run segment-level beam search over sentence candidates.
+9) The models are finetuned to emit the reflection labels.
 
-- Sentence-level retrieval decision (`RetrieveDecision`) before each next sentence
-- One candidate per passage with reflection labels:
-  - `isrel` (relevance), `issup` (support), `isuse` (usefulness)
-- Selection by a weighted score with hard gates for unsupported/irrelevant content
-- Optional segment-level beam search (`beam_size > 1`) like the paper
+## Exceptions in this repo
 
-All of the logic lives in `selfrag.py`.
+- No finetuned model; reflection labels are generated as JSON and parsed.
+- No token-level logprobs for reflection labels.
+- Retrieval policy is conservative to reduce hallucinations on doc-specific questions.
+- The no-context path refuses to guess policy facts.
 
-## Differences vs the paper
+## Run the code
 
-- No finetuned model; reflection labels are generated and parsed from JSON
-- No token-level logprobs for reflection labels
-- A conservative retrieve policy to reduce hallucinations on doc-specific questions
-- No-context path refuses to guess policy facts
-
-## Quick start
-
-1) Install deps (example)
+1) Install deps
 
 ```bash
 python -m venv .venv
@@ -34,7 +32,7 @@ python -m venv .venv
 pip install openai faiss-cpu numpy pydantic pypdf
 ```
 
-2) Set your API key
+2) Set your API key (or put it in the root `.env`)
 
 ```powershell
 $env:OPENAI_API_KEY="sk-..."
@@ -52,25 +50,9 @@ python main.py ingest --docs kb --out faiss_index
 python main.py ask --index faiss_index "What counts as restricted data?"
 ```
 
-## How it works (high level)
-
-- `kb_index.py` chunks documents and builds a FAISS index
-- `selfrag.py` runs the Self-RAG loop:
-  - decide retrieve
-  - fetch passages
-  - generate one candidate sentence per passage with reflection labels
-  - score + filter candidates, append the best sentence
-  - stop when `is_final` is true or `max_steps` reached
-
 ## Files
 
 - `main.py`: CLI entry point (`ingest`, `ask`)
 - `kb_index.py`: chunking + embeddings + FAISS
 - `selfrag.py`: Self-RAG inference loop and scoring
 - `kb/`: example knowledge base docs
-
-## Notes
-
-- `pypdf` is only needed if you ingest PDFs.
-- The CLI defaults to small, conservative settings (greedy decode, low temperature).
-  Tune `--beam-size`, `--top-k`, and `--per-step-passages` as needed.

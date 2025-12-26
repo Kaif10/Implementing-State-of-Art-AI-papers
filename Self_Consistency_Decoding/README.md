@@ -1,41 +1,23 @@
-# Self-Consistency Decoding (Paper Implementation)
+# Self-Consistency Decoding
 
-This folder contains a notebook-style implementation of the Self-Consistency paper. It samples multiple chain-of-thought (CoT) paths, parses the final answers, and picks the majority vote.
+Paper: [Self-Consistency Improves Chain of Thought Reasoning in Language Models](https://arxiv.org/abs/2203.11171)
 
-## What matches the paper
+## Algorithmic flow (paper)
 
-- Sample many reasoning paths with stochastic decoding (temperature, top-k/top-p)
-- Parse final answers from each path
-- Majority vote to select the final prediction
-- Separate parsing for arithmetic vs commonsense tasks
+1) Build a few-shot chain-of-thought prompt for the task.
+2) Sample multiple reasoning paths with stochastic decoding.
+3) Extract the final answer from each sampled path.
+4) Take the majority vote over answers to select the final prediction.
 
-## Differences / caveats
+## Exceptions in this repo
 
-- Implemented as a single Jupyter notebook for clarity
-- Uses local model inference (not the exact model from the paper)
-- No evaluation harness; this is a runnable demo
+- The original paper uses Google's PALM, we have used QWEN
 
-## How to run
+## Run the code
 
-1) Open the notebook
-
-```
-Self_Consistency_Decoding/self_consistency_decoding.ipynb
-```
-
-2) Run cells top-to-bottom. Adjust:
+1) Run cells top-to-bottom. Adjust:
 
 - `GenCfg`: number of samples `m`, temperature, and sampling params
 - `TASK`: `arithmetic` or `commonsense`
 - `question`: the prompt to solve
 
-## How it works (high level)
-
-- Build a few-shot CoT prompt
-- Sample `m` completions with stochastic decoding
-- Parse the answer string from each completion
-- Majority vote over parsed answers
-
-## Files
-
-- `self_consistency_decoding.ipynb`: full implementation and demos

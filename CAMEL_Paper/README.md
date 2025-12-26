@@ -1,23 +1,18 @@
-# CAMEL (Role-Playing Agent) Implementation
+# CAMEL (Role-Playing Agents)
 
-This folder contains a compact implementation of the CAMEL paper. It follows the paper's role-playing setup with a task specifier, a user agent, and an assistant agent, plus the termination rules described in the paper.
+Paper: [CAMEL: Communicative Agents for "Mind" Exploration of Large Language Model Society](https://arxiv.org/abs/2303.17760)
 
-## What matches the paper
+## Algorithmic flow (paper)
 
-- Task specifier prompt to refine the preliminary task
-- Role-playing agents with fixed system prompts (AI Society and Code settings)
-- Turn-by-turn conversation between User and Assistant agents
-- Paper-style termination: max messages, user no-instruct rounds, `<CAMEL_TASK_DONE>`, role reversal, optional token limit
+1) Use a task specifier to refine a preliminary task into a clear instruction with roles and constraints.
+2) Initialize the User and Assistant role prompts for the selected mode (AI Society or Code).
+3) Alternate turns between User and Assistant, conditioning each response on the role prompt and conversation history.
+4) Stop when a termination rule fires: max messages, user no-instruct rounds, `<CAMEL_TASK_DONE>`, role reversal, or token limit.
 
-## Differences / caveats
 
-- Uses OpenAI chat models instead of a finetuned or custom model
-- Token counting is an estimate for budgeting
-- Minimal CLI and logging (no evaluation harness)
+## Run the code
 
-## Quick start
-
-1) Install deps (example)
+1) Install deps
 
 ```bash
 python -m venv .venv
@@ -43,13 +38,9 @@ python run.py --mode ai_society --task "Draft a basic trading strategy" --assist
 python run.py --mode code --task "Build a simple backtest function" --domain Finance --language Python
 ```
 
-## How it works (high level)
+## Files
 
 - `prompts.py`: prompt templates from the paper (AI Society and Code)
-- `agents.py`: chat model wrapper and role‑playing agent state
+- `agents.py`: chat model wrapper and role-playing agent state
 - `session.py`: task specification, parsing, and termination logic
 - `run.py`: CLI entry point
-
-## Notes
-
-- Increase `--max-messages` or `--word-limit` for longer interactions.
