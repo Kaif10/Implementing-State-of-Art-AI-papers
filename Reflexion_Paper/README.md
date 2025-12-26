@@ -9,12 +9,14 @@ Paper: [Reflexion: Language Agents with Verbal Reinforcement Learning](https://a
 3) A reflector summarizes lessons from the attempt and feedback.
 4) The actor retries with a memory of recent reflections.
 5) Repeat until the task passes or the trial limit is reached.
+6) The actor receives the full reflection memory at each iteration (caution: memory growth increases input tokens).
 
 ## Exceptions in this repo
 
-- CoT-based Reflexion only; the ReAct variant is not implemented yet.
-- The evaluator is LLM-based instead of environment reward or task-specific tests.
+- CoT-based Reflexion only; the ReAct/tool-calling variant is not implemented yet.
+- The evaluator is LLM-based instead of environment reward or task-specific tests as in the paper.
 - Actor and evaluator outputs are parsed from JSON; failures fall back to raw text.
+- Reflection memory is single-task only; the paper also explores cross-task memory.
 
 ## Run the code
 
