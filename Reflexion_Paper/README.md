@@ -30,3 +30,4 @@ The script runs up to `trials` attempts (default 5) on the demo task in `core.py
 ## Alignment with the Reflexion paper
 - Implements the reasoning-style loop: attempt -> evaluate -> reflect -> retry.
 - Evaluation is LLM-based here; swap the evaluator to use environment reward/tests to match specific benchmarks.
+- This implementation covers the CoT-based Reflexion variant only; the ReAct version is not implemented yet.
