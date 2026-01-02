@@ -4,7 +4,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Callable
 
-from agents import AssistantAgent, ChatAgent, ChatModel, UserAgent, count_tokens_tiktoken
+from agents import AssistantAgent, ChatAgent, ChatModel, UserAgent
 from prompts import (
     CAMEL_TASK_DONE,
     fill_angle_brackets,
@@ -33,44 +33,14 @@ def is_task_done(text: str) -> bool:
     return text.strip() == CAMEL_TASK_DONE
 
 
-def parse_strict_instruction(text: str) -> Instruction | None:
-    """
-    Paper format:
-      Instruction: ...
-      Input: ...
-    Exactly two non-empty lines.
-    """
-    if is_task_done(text):
-        return None
-
-    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
-    if len(lines) != 2:
-        return None
-    if not lines[0].startswith("Instruction:"):
-        return None
-    if not lines[1].startswith("Input:"):
-        return None
-
-    inst = lines[0][len("Instruction:") :].strip()
-    inp = lines[1][len("Input:") :].strip()
-    if not inst or not inp:
-        return None
-
-    return Instruction(instruction=inst, input=inp)
-
-
 _INSTRUCTION_RE = re.compile(r"^\s*Instruction\s*:\s*(.+?)\s*$", re.IGNORECASE)
 _INPUT_RE = re.compile(r"^\s*Input\s*:\s*(.+?)\s*$", re.IGNORECASE)
 
 
-def parse_instruction_relaxed(text: str) -> Instruction | None:
+def parse_instruction(text: str) -> Instruction | None:
     """
-
-    The paper's "User No Instruct" is conceptual ("user does not instruct assistant"),
-    but LLM outputs often include extra whitespace/labels/commentary. Treat the user as
-    "instructing" iff BOTH an Instruction: line and an Input: line appear anywhere.
-
-    Extraction: returns the first occurrences (case-insensitive). Keeps "None" literal.
+    Treat the user as "instructing" if BOTH an Instruction: line and an Input: line
+    appear anywhere (case-insensitive). Returns the first occurrences.
     """
     if is_task_done(text):
         return None
@@ -111,8 +81,6 @@ def assistant_is_instructing(text: str) -> bool:
 class TerminationConfig:
     max_messages: int = 40
     user_no_instruct_rounds: int = 3
-    token_limit: int | None = None
-    token_model: str | None = None
 
 
 @dataclass(frozen=True)
@@ -207,13 +175,6 @@ class CamelRolePlay:
             term=term,
         )
 
-    def _hit_token_limit(self) -> bool:
-        if self.term.token_limit is None or self.term.token_model is None:
-            return False
-        a = count_tokens_tiktoken(self.term.token_model, self.assistant_agent.history)
-        u = count_tokens_tiktoken(self.term.token_model, self.user_agent.history)
-        return a >= self.term.token_limit or u >= self.term.token_limit
-
     def run(self, on_step: Callable[[str, str], None] | None = None) -> list[Turn]:
         """
         Paper-style termination:
@@ -221,13 +182,12 @@ class CamelRolePlay:
           - user no-instruct for 3 rounds
           - user emits <CAMEL_TASK_DONE>
           - assistant starts instructing (role reversal)
-          - optional token limit
         """
         user_no_instruct = 0
         msg_count = 0
 
         while True:
-            if msg_count >= self.term.max_messages or self._hit_token_limit():
+            if msg_count >= self.term.max_messages:
                 break
 
             user_text = self.user_agent.step().strip()
@@ -236,10 +196,10 @@ class CamelRolePlay:
             if is_task_done(user_text):
                 break
 
-            if msg_count >= self.term.max_messages or self._hit_token_limit():
+            if msg_count >= self.term.max_messages:
                 break
 
-            if parse_instruction_relaxed(user_text) is None:
+            if parse_instruction(user_text) is None:
                 user_no_instruct += 1
             else:
                 user_no_instruct = 0

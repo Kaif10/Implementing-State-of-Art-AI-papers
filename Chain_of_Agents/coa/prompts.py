@@ -23,8 +23,12 @@ The following are given passages. However, the source text is too long and has b
 Answer:"""
 
 # The paper does not publish an explicit judge prompt; this is a minimal default.
-JUDGE_PROMPT = """You are given multiple candidate summaries (Communication Units) produced by different Chain-of-Agents paths.
-Pick the candidate that is most reliable for answering the task, then answer using ONLY that candidate.
+JUDGE_PROMPT = """You are the judge in Multi-path Chain-of-Agents.
+
+You are given multiple final Communication Units (CU_l), each produced by a different CoA path.
+Your job:
+1) Select the single CU_l that is MOST RELIABLE for completing the task.
+2) Generate the final answer using ONLY the selected CU_l (do not use any other candidates).
 
 Task requirements:
 {task_requirements}
@@ -32,10 +36,11 @@ Task requirements:
 Query (may be empty):
 {query}
 
-Candidates:
+Candidates (each is a final CU_l):
 {candidates}
 
 Return format:
-- First line: selected id (e.g., "path_3")
-- Remaining lines: final answer
+First line: selected id (e.g., "path_3")
+Remaining lines: final answer
 """
+

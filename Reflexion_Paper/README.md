@@ -14,9 +14,9 @@ Paper: [Reflexion: Language Agents with Verbal Reinforcement Learning](https://a
 ## Exceptions in this repo
 
 - CoT-based Reflexion only; the ReAct/tool-calling variant is not implemented yet.
-- The evaluator is LLM-based instead of environment reward or task-specific tests as in the paper.
+- The evaluator is LLM-based judge instead of environment reward or task-specific tests as in the paper.
 - Actor and evaluator outputs are parsed from JSON; failures fall back to raw text.
-- Reflection memory is single-task only; the paper also explores cross-task memory.
+- Reflection memory is single-task only; the paper also explores cross-task memory which I personally thought was not really needed at a simpler level.
 
 ## Run the code
 

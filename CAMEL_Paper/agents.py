@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Literal, Protocol
+from openai import OpenAI
 
 Role = Literal["system", "user", "assistant"]
 
@@ -18,56 +19,25 @@ class ChatModel(Protocol):
 
 @dataclass(frozen=True)
 class OpenAIChatClient:
+    """
+    Minimal OpenAI chat wrapper.
+
+    - One client instance (no per-call re-init)
+    - Deterministic by default (temperature=0)
+    """
+
     model: str
-    api_key: str
+    api_key: str | None = None
+    temperature: float = 0.0
 
     def complete(self, messages: list[ChatMessage]) -> str:
-        from openai import OpenAI
-
         client = OpenAI(api_key=self.api_key)
         resp = client.chat.completions.create(
             model=self.model,
             messages=[{"role": m.role, "content": m.content} for m in messages],
+            temperature=self.temperature,
         )
         return resp.choices[0].message.content or ""
-
-
-def count_tokens_tiktoken(model: str, messages: list[ChatMessage]) -> int:
-    import tiktoken
-
-    try:
-        enc = tiktoken.encoding_for_model(model)
-    except KeyError:
-        enc = tiktoken.get_encoding("cl100k_base")
-
-    model_l = (model or "").lower()
-
-    tokens_per_message = None
-    tokens_per_name = None
-
-    if (
-        model_l.startswith("gpt-3.5-turbo")
-        or model_l.startswith("gpt-4")
-        or model_l.startswith("gpt-4o")
-        or model_l.startswith("gpt-4.1")
-        or model_l.startswith("o1")
-        or model_l.startswith("o3")
-    ):
-        tokens_per_message = 3
-        tokens_per_name = 1
-
-    if tokens_per_message is None:
-        return sum(len(enc.encode(m.content)) for m in messages)
-
-    total = 0
-    for m in messages:
-        total += tokens_per_message
-        total += len(enc.encode(m.role))
-        total += len(enc.encode(m.content or ""))
-        total += tokens_per_name
-
-    total += 3
-    return total
 
 
 @dataclass

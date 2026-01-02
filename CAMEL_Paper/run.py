@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 import argparse
-import os
 
 from agents import OpenAIChatClient
 from session import CamelRolePlay, AiSocietyConfig, CodeConfig, TerminationConfig
 
-API_KEY = "<API_KEY>"
 MODEL = "gpt-4o-mini"
 
 
@@ -25,12 +23,11 @@ def main() -> None:
 
     args = p.parse_args()
 
-    model = OpenAIChatClient(model=MODEL, api_key=API_KEY)
+    # OpenAI SDK reads OPENAI_API_KEY from environment by default.
+    model = OpenAIChatClient(model=MODEL, api_key=None)
     term = TerminationConfig(
         max_messages=args.max_messages,
         user_no_instruct_rounds=3,
-        token_limit=None,
-        token_model=None,
     )
 
     if args.mode == "ai_society":

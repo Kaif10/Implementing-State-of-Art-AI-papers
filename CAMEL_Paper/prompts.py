@@ -10,7 +10,7 @@ def fill_angle_brackets(template: str, mapping: dict[str, str]) -> str:
     return out
 
 
-#  AI Society prompts
+# AI Society prompts
 
 AI_SOCIETY_TASK_SPECIFIER_PROMPT = (
     "Here is a task that <ASSISTANT_ROLE> will help <USER_ROLE> to complete: <TASK>.\n"

@@ -9,17 +9,11 @@ from kb_index import FaissKB
 from selfrag import SelfRAG
 
 
-# Do NOT paste real keys into code. Prefer environment variables.
-# PowerShell:
-#   $env:OPENAI_API_KEY="sk-..."
-# cmd.exe:
-#   set OPENAI_API_KEY=sk-...
-OPENAI_API_KEY_FALLBACK = "<API_KEY>"
-
-
 def make_client() -> OpenAI:
-    key = os.getenv("OPENAI_API_KEY") or OPENAI_API_KEY_FALLBACK
-    return OpenAI(api_key=key) if key else OpenAI()
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise SystemExit("Missing OPENAI_API_KEY environment variable")
+    return OpenAI(api_key=api_key)
 
 
 def cmd_ingest(args: argparse.Namespace) -> None:
@@ -42,11 +36,18 @@ def cmd_ask(args: argparse.Namespace) -> None:
     rag = SelfRAG(
         client=client,
         kb=kb,
-        gen_model=args.model,
+        model=args.model,
         top_k=args.top_k,
         per_step_passages=args.per_step_passages,
         max_steps=args.max_steps,
         temperature=args.temperature,
+        w_rel=args.w_rel,
+        w_sup=args.w_sup,
+        w_use=args.w_use,
+        require_relevant=args.require_relevant,
+        require_supported=args.require_supported,
+        max_retries=args.max_retries,
+        retry_base_delay=args.retry_base_delay,
     )
 
     print(rag.answer(args.question, beam_size=args.beam_size))
@@ -71,8 +72,24 @@ def main() -> None:
     ask.add_argument("--top-k", type=int, default=5)
     ask.add_argument("--per-step-passages", type=int, default=3)
     ask.add_argument("--max-steps", type=int, default=10)
-    ask.add_argument("--beam-size", type=int, default=1)      # 1 = greedy, >1 = segment beam
-    ask.add_argument("--temperature", type=float, default=0.0) # greedy-ish
+    ask.add_argument("--beam-size", type=int, default=1)
+    ask.add_argument("--temperature", type=float, default=0.0)
+
+    # scoring weights
+    ask.add_argument("--w-rel", type=float, default=1.0)
+    ask.add_argument("--w-sup", type=float, default=2.0)
+    ask.add_argument("--w-use", type=float, default=1.0)
+
+    # gates
+    ask.add_argument("--require-relevant", action="store_true", default=True)
+    ask.add_argument("--no-require-relevant", action="store_false", dest="require_relevant")
+    ask.add_argument("--require-supported", action="store_true", default=True)
+    ask.add_argument("--no-require-supported", action="store_false", dest="require_supported")
+
+    # retries
+    ask.add_argument("--max-retries", type=int, default=3)
+    ask.add_argument("--retry-base-delay", type=float, default=0.5)
+
     ask.add_argument("question")
     ask.set_defaults(func=cmd_ask)
 

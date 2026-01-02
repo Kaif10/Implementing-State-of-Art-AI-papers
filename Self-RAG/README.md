@@ -1,58 +1,111 @@
-# Self-RAG (Practical Implementation)
+# Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection
 
-Paper: [Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection](https://arxiv.org/abs/2310.11511)
+An inspired implementation of [Self-RAG](https://arxiv.org/abs/2310.11511) using off-the-shelf LLM APIs.
 
-## Algorithmic flow (paper)
+## Paper Methodology
 
-1) Start with a query and the current partial answer.
-2) Before generating each next sentence, decide whether the need to retrieve (`RetrieveDecision`).
-3) If retrieving, fetch top passages; if not, continue with the model alone.
-4) For each passage, generate a candidate next sentence while emitting reflection labels:
-   - `isrel` (relevance), `issup` (support), `isuse` (usefulness).
-5) Score and filter candidates with hard gates/logic for irrelevant or unsupported content.
-6) Append the best candidate sentence to the answer.
-7) Repeat until an `is_final` stop condition or a max-step limit is reached.
-8) Optionally run segment-level beam search over sentence candidates.
-9) The models are finetuned to emit the reflection labels.
+This implementation follows **Algorithm 1** and **Appendix A.3** as closely as possible:
 
-## Exceptions in this repo
 
-- No finetuned model; reflection labels are generated as JSON and parsed.
-- No token-level logprobs for reflection labels.
-- Retrieval policy is conservative to reduce hallucinations on doc-specific questions.
-- The no-context path refuses to guess policy facts.
+# Self-RAG: Retrieve + Generate + Critique (Self-Reflection)
 
-## Run the code
+An implementation inspired by the paper **Self-RAG (Learning to Retrieve, Generate, and Critique through Self-Reflection)** using off-the-shelf LLM APIs.
 
-1) Install deps
+## Paper methodology (in plain English)
 
-```bash
-python -m venv .venv
-. .venv/bin/activate  # PowerShell: .\.venv\Scripts\Activate.ps1
-pip install openai faiss-cpu numpy pydantic pypdf
-```
+Self-RAG is just **RAG with a loop**:
 
-2) Set your API key (or put it in the root `.env`)
+* The model **decides whether retrieval is needed**
+* If it retrieves, it generates **one candidate next sentence per retrieved chunk**
+* The model also **self-grades** each candidate (relevance + support + usefulness)
+* It **picks the best candidate** and appends it to the answer
+* Repeat until the answer is done
 
-```powershell
-$env:OPENAI_API_KEY="sk-..."
-```
+---
 
-3) Build the index
+## Core loop (one “segment” = one sentence)
 
-```bash
-python main.py ingest --docs kb --out faiss_index
-```
+Repeat until `is_final = true` (or max steps reached):
 
-4) Ask a question
+### 1) Retrieval decision
 
-```bash
-python main.py ask --index faiss_index "What counts as restricted data?"
-```
+Given:
 
-## Files
+* user prompt `x`
+* answer so far `y` y=0 (nothing) at start
 
-- `main.py`: CLI entry point (`ingest`, `ask`)
-- `kb_index.py`: chunking + embeddings + FAISS
-- `selfrag.py`: Self-RAG inference loop and scoring
-- `kb/`: example knowledge base docs
+The model outputs:
+
+`Retrieve ∈ {yes, no, continue}`
+
+* **yes** = fetch new chunks from the KB
+* **no** = don’t retrieve, just write the next sentence
+* **continue** = reuse the chunks retrieved in the previous step
+
+### 2) If `Retrieve = yes`
+
+1. Retrieve **top-K chunks** (normal RAG retrieval): `D = {d1…dK}`
+2. For each chunk `di` (batched/parallel):
+   
+   * Generate **one candidate next sentence** `y_i` using:
+     **(prompt + answer-so-far + this chunk)**
+    (think of this like different LLMs in parallel, each LLM get one chunk as context so k different outputs (segments)) (whereas in vanilla RAG all chunks go as context in one LLM)
+
+   * Also output critique labels for that candidate:
+     * `ISREL`: relevant / irrelevant
+     * `ISSUP`: fully supported / partially supported / no support
+     * `ISUSE`: 1–5 usefulness
+     * `is_final`: whether the answer is complete after this sentence
+3. **Score** all candidate generations (all k distinct segments generated in parallel) and pick the best one
+4. Append the **winning sentence(generated segment)** to the answer `y`
+
+✅ Important: we append the **winning sentence (segment)** after every loop so the context for LLM grows after every loop
+
+---
+
+### 3) If `Retrieve = continue`
+
+* Reuse the previous retrieved chunk set `D`
+* Generate candidates + critique + pick best (same as above)
+
+---
+
+### 4) If `Retrieve = no`
+
+* Generate the next sentence without retrieval
+* Append it to `y`
+
+---
+
+## Candidate scoring (“critic score”)
+
+For each candidate sentence:
+
+* Score ≈ **language-model quality** (how good the sentence is)
+
+  * **weighted critique score**
+
+Critique prefers:
+
+* `ISREL = relevant`
+* `ISSUP = fully supported` (partial gets some credit)
+* higher `ISUSE`
+
+---
+
+## Optional: segment-level beam search 
+
+Until now we saw picking "1" best segment from k generated segments and appending it after each core loop but paper implements this at a beam search level (Very important that to know how the beam search algorithm works)
+
+Instead of picking only 1 best candidate each step (what we saw earlier-**greedy**), keep **B best partial answers** (**beams**):
+
+* Each beam is a separate draft answer path
+* Each step, expand each beam → score → keep top **B**
+* At the end, return the best beam
+
+
+**Beam size B=1 = greedy mode.**
+
+---
+
+
