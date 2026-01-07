@@ -2,6 +2,8 @@
 
 Paper: [Chain of Agents: Large Language Models Collaborating on Long-Context Tasks](https://arxiv.org/abs/2406.02818)
 
+A pretty interesting paper that helps solve a big problem that a single LLM might face while dealing huge context-> needle in a haystack, to a great extent
+
 ## Algorithmic flow (paper)
 
 1) Split the long input into sentences and greedily chunk them under a token budget `k` (Algorithm 2).
