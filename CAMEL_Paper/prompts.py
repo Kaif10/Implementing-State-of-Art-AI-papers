@@ -2,8 +2,9 @@ from __future__ import annotations
 
 CAMEL_TASK_DONE = "<CAMEL_TASK_DONE>"
 
-
-def fill_angle_brackets(template: str, mapping: dict[str, str]) -> str:
+#  takes a template string and a mapping, and swaps every <KEY> in the template with its value.
+# Example: <ASSISTANT_ROLE> becomes "Python Programmer", <TASK> becomes the refined task.
+def fill_angle_brackets(template: str, mapping: dict[str, str]) -> str:  
     out = template
     for k, v in mapping.items():
         out = out.replace(f"<{k}>", v)

@@ -10,27 +10,22 @@ from .chunking import chunk_text
 from .llm import count_tokens, generate
 from . import prompts as P
 
-# =============================================================================
-# Chain-of-Agents (CoA)
-#
+
+
 # This module is intentionally split into two parts:
-#
+
 #   1) CORE (Algorithm 1): run_single_path()
 #      - the worker chain builds CU_1..CU_l, then a manager synthesizes the answer
 #      - this is the "main" CoA algorithm
-#
+
 #   2) OPTIONAL PAPER EXTRAS (Section 5.6): run_multipath()
 #      - multi-path variants (bidir / perm5 / self5)
 #      - selection via majority vote or a judge model
-#
-# Keeping them in one file is fine, but we keep a hard visual separation so
-# readers don't confuse the extras as required for the core algorithm.
-# =============================================================================
 
+# I have kept a hard visual separation so readers don't confuse the extras as required for the core algorithm.
 
-# =============================================================================
 # Small utilities (used by both core and extras)
-# =============================================================================
+
 
 def _trim_keep_head_tail(text: str, enc, max_tokens: int) -> str:
     """
@@ -109,9 +104,9 @@ def _fit_manager_prompt(
     return prompt, cu
 
 
-# =============================================================================
+
 # 1) CORE CoA — Algorithm 1 (Single Path)
-# =============================================================================
+
 
 def run_single_path(
     client: OpenAI,
@@ -238,9 +233,9 @@ def run_single_path(
     }
 
 
-# =============================================================================
+
 # 2) OPTIONAL PAPER EXTRAS — Multi-path CoA (Section 5.6)
-# =============================================================================
+
 
 def majority_vote(answers: List[str]) -> str:
     """

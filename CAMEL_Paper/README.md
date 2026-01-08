@@ -48,3 +48,4 @@ python run.py --mode code --task "Build a simple backtest function" --domain Fin
 - `agents.py`: chat model wrapper and role-playing agent state
 - `session.py`: task specification, parsing, and termination logic
 - `run.py`: CLI entry point
+

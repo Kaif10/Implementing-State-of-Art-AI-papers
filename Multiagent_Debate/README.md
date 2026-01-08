@@ -8,7 +8,7 @@ This folder implements the Multi-Agent Debate setup: multiple independent agents
 
 1) Initialize N agents with an independent system prompt.
 2) Round 1: each agent answers the task prompt (task-specific start prompt).
-3) Rounds 2..R: for each agent, provide the other agents' last-round responses (concat or summarized) and ask for an updated answer.
+3) Rounds 2..R: for each agent, provide the other agents' last-round responses (concat or summarized) and ask to update its original answer based on the other answers it saw from the other agents.
 4) If the task is comparable, parse final answers and early-stop when all agents agree.
 5) Select the final output by majority vote over parsed answers; otherwise return the first agent's final response.
 

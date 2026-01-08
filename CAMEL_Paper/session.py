@@ -19,29 +19,31 @@ from prompts import (
 
 @dataclass(frozen=True)
 class Turn:
+    # One back-and-forth exchange.
     user: str
     assistant: str
 
 
 @dataclass(frozen=True)
 class Instruction:
+    # Parsed structured instruction from the user role.
     instruction: str
     input: str
 
 
 def is_task_done(text: str) -> bool:
+    # Exact stop token used by the user role.
     return text.strip() == CAMEL_TASK_DONE
 
 
+# Regexes for the structured instruction format in the user prompt.
 _INSTRUCTION_RE = re.compile(r"^\s*Instruction\s*:\s*(.+?)\s*$", re.IGNORECASE)
 _INPUT_RE = re.compile(r"^\s*Input\s*:\s*(.+?)\s*$", re.IGNORECASE)
 
 
+# Treat the user as "instructing" if BOTH an Instruction: line and an Input: line appear anywhere (case-insensitive). Returns the first occurrences.
+   
 def parse_instruction(text: str) -> Instruction | None:
-    """
-    Treat the user as "instructing" if BOTH an Instruction: line and an Input: line
-    appear anywhere (case-insensitive). Returns the first occurrences.
-    """
     if is_task_done(text):
         return None
 
@@ -66,11 +68,8 @@ def parse_instruction(text: str) -> Instruction | None:
     return Instruction(instruction=inst, input=inp)
 
 
+# Termination: assistant begins issuing 'Instruction:' (role reversal). Check first non-empty line.
 def assistant_is_instructing(text: str) -> bool:
-    """
-    Termination: assistant begins issuing 'Instruction:' (role reversal).
-    Check first non-empty line.
-    """
     for ln in (x.strip() for x in text.splitlines()):
         if ln:
             return ln.startswith("Instruction:")
@@ -100,6 +99,7 @@ class CodeConfig:
 
 
 def _specify_task(model: ChatModel, spec_prompt: str) -> str:
+    # One-shot task refinement using the task specifier prompt.
     a = ChatAgent(model=model, system_prompt="")
     a.add_counterpart(spec_prompt)
     return a.step().strip()
@@ -107,6 +107,7 @@ def _specify_task(model: ChatModel, spec_prompt: str) -> str:
 
 @dataclass
 class CamelRolePlay:
+    # Holds role agents and the ongoing conversation state.
     assistant_agent: AssistantAgent
     user_agent: UserAgent
     specified_task: str
@@ -115,6 +116,7 @@ class CamelRolePlay:
 
     @staticmethod
     def create_ai_society(model: ChatModel, cfg: AiSocietyConfig, term: TerminationConfig | None = None) -> "CamelRolePlay":
+        # Build AI Society roleplay with a refined task and role-specific system prompts.
         term = term or TerminationConfig()
 
         spec_prompt = fill_angle_brackets(
@@ -146,6 +148,7 @@ class CamelRolePlay:
 
     @staticmethod
     def create_code(model: ChatModel, cfg: CodeConfig, term: TerminationConfig | None = None) -> "CamelRolePlay":
+        # Build Code roleplay with a refined task and domain/language prompts.
         term = term or TerminationConfig()
 
         spec_prompt = fill_angle_brackets(
@@ -175,14 +178,9 @@ class CamelRolePlay:
             term=term,
         )
 
+
     def run(self, on_step: Callable[[str, str], None] | None = None) -> list[Turn]:
-        """
-        Paper-style termination:
-          - max messages
-          - user no-instruct for 3 rounds
-          - user emits <CAMEL_TASK_DONE>
-          - assistant starts instructing (role reversal)
-        """
+    # Paper-style termination: - max messages, user no-instruct for 3 rounds, user emits <CAMEL_TASK_DONE>, assistant starts instructing (role reversal)        
         user_no_instruct = 0
         msg_count = 0
 
@@ -190,6 +188,7 @@ class CamelRolePlay:
             if msg_count >= self.term.max_messages:
                 break
 
+            # User speaks first in each turn.
             user_text = self.user_agent.step().strip()
             msg_count += 1
 
@@ -199,6 +198,7 @@ class CamelRolePlay:
             if msg_count >= self.term.max_messages:
                 break
 
+            # Track whether the user is still giving structured instructions.
             if parse_instruction(user_text) is None:
                 user_no_instruct += 1
             else:
@@ -207,6 +207,7 @@ class CamelRolePlay:
             if user_no_instruct >= self.term.user_no_instruct_rounds:
                 break
 
+            # Assistant responds conditioned on the user message.
             self.assistant_agent.add_counterpart(user_text)
             assistant_text = self.assistant_agent.step().strip()
             msg_count += 1
@@ -214,6 +215,7 @@ class CamelRolePlay:
             if assistant_is_instructing(assistant_text):
                 break
 
+            # Feed assistant reply back to the user agent for the next round.
             self.user_agent.add_counterpart(assistant_text)
             self.turns.append(Turn(user=user_text, assistant=assistant_text))
 

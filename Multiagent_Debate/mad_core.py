@@ -12,9 +12,8 @@ TaskName = Literal["arithmetic", "gsm8k", "mmlu", "biography", "chess"]
 OtherContextMode = Literal["concat", "summarize"]
 
 
-# -----------------------------
-# Paper prompts (Table 15)
-# -----------------------------
+# Paper prompt
+
 def prompt_arithmetic_start(expr: str) -> str:
     return (
         f"What is the result of {expr}? "
@@ -104,9 +103,9 @@ def prompt_chess_debate(other: str) -> str:
     )
 
 
-# -----------------------------
+
 # Answer parsing (for majority vote / early stop)
-# -----------------------------
+
 _BOXED_RE = re.compile(r"\\boxed\{([^}]+)\}")
 _MMLU_RE = re.compile(r"\(([A-D])\)", re.IGNORECASE)
 _SQUARE_RE = re.compile(r"\(([a-h][1-8])\)", re.IGNORECASE)  # used in chess validity tasks (not move prediction)
@@ -154,9 +153,9 @@ def majority_vote(parsed: List[Optional[str]]) -> Optional[str]:
     return sorted(c.items(), key=lambda kv: (-kv[1], kv[0]))[0][0]
 
 
-# -----------------------------
+
 # TaskSpec
-# -----------------------------
+
 @dataclass(frozen=True)
 class TaskSpec:
     name: TaskName
@@ -204,9 +203,9 @@ def get_task(task: TaskName) -> TaskSpec:
     raise ValueError(f"Unknown task: {task}")
 
 
-# -----------------------------
+
 # Summarization (optional, paper Figure 13)
-# -----------------------------
+
 def summarize_other_responses(
     client: OpenAI,
     model: str,
@@ -228,10 +227,9 @@ def summarize_other_responses(
     return (resp.choices[0].message.content or "").strip()
 
 
-# -----------------------------
+
 # Core multi-agent debate
 # rounds = TOTAL rounds including the initial round (paper shows Round 1, Round 2, ...)
-# -----------------------------
 @dataclass
 class DebateConfig:
     model: str = "gpt-4o-mini"

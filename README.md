@@ -1,6 +1,6 @@
 # Implementing SOTA AI Papers
 
-This repo is a collection  implementations of some of the best and my favourite research publications in the space of AI in recent years.
+This repo is a collection  implementations of some of the best and my favourite research publications in the space of AI in recent years with focus on Generative AI.
 All implementations are in Python.
 Each folder corresponds to one paper and aims to capture the core algorithmic ideas with practical, minimal code (I have skipped experimentations/comparisons, only focusing on the core methodology)
 
