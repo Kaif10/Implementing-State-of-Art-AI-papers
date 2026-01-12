@@ -1,0 +1,9 @@
+Quantum computing is a rapidly advancing field that leverages quantum mechanical phenomena to perform computations. Unlike classical computers that use bits (0 or 1), quantum computers use quantum bits or qubits, which can exist in superposition states.
+
+The fundamental principles of quantum computing include superposition, entanglement, and quantum interference. Superposition allows qubits to be in multiple states simultaneously, exponentially increasing computational power for certain problems.
+
+Major technology companies including IBM, Google, and Microsoft are investing heavily in quantum computing research. IBM's quantum computers have achieved significant milestones, with systems containing over 100 qubits. Google claimed quantum supremacy in 2019 with their Sycamore processor, though this claim has been debated.
+
+Quantum computers are particularly well-suited for problems in cryptography, drug discovery, financial modeling, and optimization. Shor's algorithm, for example, can factor large numbers exponentially faster than classical algorithms, which has implications for current encryption methods.
+
+However, quantum computers face significant challenges including decoherence, error rates, and the need for extremely low temperatures. Current quantum computers operate at temperatures near absolute zero, requiring sophisticated cooling systems.

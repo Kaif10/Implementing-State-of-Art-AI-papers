@@ -6,7 +6,8 @@ import textwrap
 from openai import OpenAI
 import os
 
-os.environ["OPENAI_API_KEY"] = "your_key_here"
+# Set your OpenAI API key here or in environment variable OPENAI_API_KEY
+# os.environ["OPENAI_API_KEY"] = "your_key_here"
 
 @dataclass
 class Task:

@@ -1,0 +1,52 @@
+[
+  {
+    "docs": [
+      {
+        "title": "wikipedia_ulm.txt",
+        "text": "Ulm is a city in the German state of Baden-Württemberg, situated on the river Danube on the border with Bavaria. The city, which has an estimated population of more than 126,000, forms an urban district and is the administrative seat of the Alb-Donau district. Ulm is famous for having the church with the tallest steeple in the world, the Ulm Minster. The city is also known as the birthplace of Albert Einstein, who was born there on March 14, 1879."
+      },
+      {
+        "title": "wikipedia_quantum_mechanics.txt",
+        "text": "Quantum mechanics is a fundamental theory in physics that describes the physical properties of nature at the scale of atoms and subatomic particles."
+      },
+      {
+        "title": "wikipedia_albert_einstein.txt",
+        "text": "Einstein was born in Ulm, in the Kingdom of Württemberg in the German Empire, on 14 March 1879."
+      }
+    ],
+    "question": "What city was Albert Einstein born in?",
+    "cot": "Albert Einstein was born in Ulm, Germany. answer is: Ulm"
+  },
+  {
+    "docs": [
+      {
+        "title": "wikipedia_albert_einstein.txt",
+        "text": "His mass–energy equivalence formula E = mc², which arises from relativity theory, has been called \"the world's most famous equation\"."
+      },
+      {
+        "title": "wikipedia_quantum_mechanics.txt",
+        "text": "Quantum mechanics differs from classical physics in that energy, momentum, angular momentum, and other quantities of a bound system are restricted to discrete values."
+      }
+    ],
+    "question": "What is Einstein's most famous equation?",
+    "cot": "Einstein's mass–energy equivalence formula E = mc² is called the world's most famous equation. answer is: E = mc²"
+  },
+  {
+    "docs": [
+      {
+        "title": "wikipedia_nobel_prize.txt",
+        "text": "Albert Einstein received the Nobel Prize in Physics in 1921 for his services to theoretical physics, and especially for his discovery of the law of the photoelectric effect."
+      },
+      {
+        "title": "wikipedia_albert_einstein.txt",
+        "text": "He received the 1921 Nobel Prize in Physics for his services to theoretical physics, and especially for his discovery of the law of the photoelectric effect."
+      },
+      {
+        "title": "wikipedia_quantum_mechanics.txt",
+        "text": "Quantum mechanics is a fundamental theory in physics that describes the physical properties of nature at the scale of atoms and subatomic particles."
+      }
+    ],
+    "question": "What year did Einstein receive the Nobel Prize in Physics?",
+    "cot": "Einstein received the Nobel Prize in Physics in 1921 for his discovery of the law of the photoelectric effect. answer is: 1921"
+  }
+]

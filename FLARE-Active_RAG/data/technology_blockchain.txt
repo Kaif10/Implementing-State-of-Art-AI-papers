@@ -1,0 +1,9 @@
+Blockchain is a distributed ledger technology that maintains a continuously growing list of records, called blocks, which are linked and secured using cryptography. Each block contains a cryptographic hash of the previous block, a timestamp, and transaction data.
+
+Bitcoin, created in 2009 by an anonymous person or group using the name Satoshi Nakamoto, was the first successful implementation of blockchain technology. Bitcoin demonstrated that digital currencies could work without a central authority.
+
+Blockchain technology has applications beyond cryptocurrency, including supply chain management, voting systems, digital identity, and smart contracts. Ethereum, launched in 2015, introduced programmable smart contracts that execute automatically when conditions are met.
+
+Key features of blockchain include decentralization, immutability, and transparency. Transactions are verified by network participants through consensus mechanisms like proof-of-work or proof-of-stake.
+
+However, blockchain faces challenges including scalability issues, high energy consumption (for proof-of-work systems), and regulatory uncertainty. Various solutions are being developed to address these limitations.

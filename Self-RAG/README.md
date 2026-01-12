@@ -55,7 +55,7 @@ The model outputs:
      * `ISREL`: relevant / irrelevant
      * `ISSUP`: fully supported / partially supported / no support
      * `ISUSE`: 1–5 usefulness
-     * `is_final`: whether the answer is complete after this sentence
+     * `is_final`: whether the answer is complete after this sentence or more generation is needed
 3. **Score** all candidate generations (all k distinct segments generated in parallel) and pick the best one
 4. Append the **winning sentence(generated segment)** to the answer `y`
 

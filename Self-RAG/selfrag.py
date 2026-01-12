@@ -12,9 +12,8 @@ from pydantic import BaseModel, Field
 from kb_index import Chunk, FaissKB
 
 
-# ---------------------------
 # Structured Outputs (Pydantic)
-# ---------------------------
+
 
 class RetrieveDecision(BaseModel):
     decision: str = Field(description="yes, no, or continue")
@@ -39,9 +38,8 @@ class NoCtxStep(BaseModel):
     is_final: bool
 
 
-# ---------------------------
+
 # Helpers
-# ---------------------------
 
 def _clean_one_sentence(text: str) -> str:
     """Force output to a single sentence (best-effort)."""
