@@ -1,6 +1,7 @@
 # Multi-Agent Debate (MAD)
 
-Paper: [Multi-Agent Debate](https://arxiv.org/search/?query=multi-agent+debate&searchtype=all&source=header)
+Paper: [Improving Factuality and Reasoning in Language Models through Multiagent Debate](https://arxiv.org/abs/2305.14325)
+
 
 This folder implements the Multi-Agent Debate setup: multiple independent agents answer the same task, then refine their answers over debate rounds by reading each others' responses. For comparable tasks, the final answer is selected by majority vote over parsed outputs.
 
