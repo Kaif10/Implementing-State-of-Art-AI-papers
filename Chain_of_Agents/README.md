@@ -12,25 +12,24 @@ A pretty interesting paper that helps solve a big problem that a single LLM migh
 4) Optionally run multi-path variants (bidir, perm5, self5) to explore different orderings or sampling.
 5) Select the final output by majority vote or a judge model.
 
-### The “relay” mental model (chunk → CU → chunk → CU …)
 
 Let the corpus be split into `n` chunks:
 
 `chunks = [c1, c2, ..., cn]`
+### Flow 
+Agent run left-to-right:
 
-Workers run left-to-right:
-
-- Worker 1 reads: `c1` → writes `CU1`
-- Worker 2 reads: `CU1 + c2` → writes `CU2`
-- Worker 3 reads: `CU2 + c3` → writes `CU3`
+- Agent 1 reads: `c1` → writes `CU1`
+- Agent 2 reads: `CU1 + c2` → writes `CU2`
+- Agent 3 reads: `CU2 + c3` → writes `CU3` (esentially each agent has input of summary from previous agent +its own assigned chunk)
 - ...
-- Worker n reads: `CU(n-1) + cn` → writes `CUn`
+- Agent n reads: `CU(n-1) + cn` → writes `CUn`
 
-Then the manager reads:
+Then the manager agent reads:
 
 `CUn (+ task requirements + query)` → final output
 
-So the CU is the **compressed memory** of everything important seen so far — each worker updates it using its own chunk.
+So the CU is the **compressed memory** of everything important seen so far — each worker agent updates it using its own chunk.
 
 ---
 
