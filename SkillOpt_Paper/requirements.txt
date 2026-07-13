@@ -1,0 +1,3 @@
+# Only needed for the real (frozen-Claude) backend. The offline simulated
+# backend and the test suite require nothing beyond the Python standard library.
+anthropic>=0.40
