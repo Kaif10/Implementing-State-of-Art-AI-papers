@@ -1,7 +1,7 @@
 """Evaluate a saved skill on a fresh held-out test set.
 
     python evaluate.py best_skill.md
-    python evaluate.py best_skill.md --backend anthropic
+    python evaluate.py best_skill.md --backend openai
 """
 
 from __future__ import annotations
@@ -9,9 +9,9 @@ from __future__ import annotations
 import argparse
 
 from skillopt import (
-    AnthropicBackend,
+    HuggingFaceBackend,
     NumberFormattingTask,
-    SimulatedBackend,
+    OpenAIBackend,
     SkillDocument,
     SkillOpt,
     SkillOptConfig,
@@ -21,17 +21,20 @@ from skillopt import (
 def main() -> None:
     parser = argparse.ArgumentParser(description="Evaluate a saved SkillOpt skill.")
     parser.add_argument("skill_path")
-    parser.add_argument("--backend", choices=["simulated", "anthropic"], default="simulated")
-    parser.add_argument("--model", default="claude-opus-4-8")
+    parser.add_argument("--backend", choices=["hf", "openai"], default="hf")
+    parser.add_argument(
+        "--model",
+        default=None,
+        help="model name (default: Qwen/Qwen2.5-1.5B-Instruct for hf, gpt-4.1-mini for openai)",
+    )
     parser.add_argument("--test-size", type=int, default=100)
     parser.add_argument("--seed", type=int, default=12345)
     args = parser.parse_args()
 
-    backend = (
-        SimulatedBackend()
-        if args.backend == "simulated"
-        else AnthropicBackend(model=args.model)
-    )
+    if args.backend == "hf":
+        backend = HuggingFaceBackend(**({"model": args.model} if args.model else {}))
+    else:
+        backend = OpenAIBackend(**({"model": args.model} if args.model else {}))
     task = NumberFormattingTask()
     test = task.generate(args.test_size, seed=args.seed)
 

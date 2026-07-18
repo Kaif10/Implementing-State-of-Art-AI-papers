@@ -1,7 +1,7 @@
 # SkillOpt — a minimal, honest reimplementation
 
-A small, dependency-light Python implementation of the core idea in Microsoft's
-**SkillOpt** paper:
+A small Python implementation of the core idea in Microsoft's **SkillOpt**
+paper, runnable fully locally with an open-source LLM:
 
 > **SkillOpt: Executive Strategy for Self-Evolving Agent Skills**
 > Yang et al., Microsoft Research (with SJTU, Tongji, Fudan), arXiv:2605.23904.
@@ -56,30 +56,38 @@ Repeat over several epochs. The best-validation skill is saved as the artifact.
 
 ## Quick start
 
-### Offline demo — no API key, no dependencies
+### Local open-source model — no API key (the default)
 
 ```bash
-python train.py
+pip install -r requirements.txt
+python train.py                    # downloads Qwen2.5-1.5B-Instruct (~3 GB) on first run
+python evaluate.py best_skill.md
 ```
 
-This runs the whole loop against a deterministic, offline mock model and a
-built-in task. It prints the training trace, the learned skill, a held-out
-before/after comparison, and writes `best_skill.md`.
+This runs the whole loop end to end against a real, frozen open-source model
+(`Qwen/Qwen2.5-1.5B-Instruct` by default — pass `--model` for any HF causal LM
+with a chat template). It prints the training trace, the learned skill, a
+held-out before/after comparison, and writes `best_skill.md`. Runs on CPU,
+CUDA, or Apple Silicon (auto-detected); greedy decoding, so runs are
+reproducible.
 
 ```bash
 python tests/test_end_to_end.py   # or: python -m pytest -q
 ```
 
-### Real training with a frozen Claude model
+The logic tests need nothing installed; the end-to-end test uses the local
+model and is skipped if torch/transformers are missing.
+
+### Frozen OpenAI model via the API
 
 ```bash
-pip install -r requirements.txt
-export ANTHROPIC_API_KEY=...
-python train.py --backend anthropic --model claude-opus-4-8
-python evaluate.py best_skill.md --backend anthropic
+export OPENAI_API_KEY=...
+python train.py --backend openai --model gpt-4.1-mini
+python evaluate.py best_skill.md --backend openai
 ```
 
-The model's weights are never touched — only the skill document changes.
+Either way, the model's weights are never touched — only the skill document
+changes.
 
 ---
 
@@ -110,7 +118,7 @@ skillopt/
   config.py      training knobs (epochs, batch size, learning rate, gate sizes)
   skill.py       the skill document: bounded add/delete/replace edits, render, save/load
   task.py        the task interface + the built-in NumberFormattingTask
-  backends.py    the two models: AnthropicBackend (frozen Claude) and SimulatedBackend (offline mock)
+  backends.py    the two models: HuggingFaceBackend (local open-source LLM) and OpenAIBackend (API)
   optimizer.py   the SkillOpt loop: rollout -> reflect -> edit -> gate
 train.py         end-to-end: split data, train, report, save best_skill.md
 evaluate.py      score a saved skill on a fresh test set (no-skill vs skill)
@@ -152,13 +160,15 @@ of the paper. Being honest about the gaps:
   harnesses.
 - **No agentic execution harness.** The agent here just answers a prompt. The
   paper also trains skills inside tool-using agent loops.
-- **The offline `SimulatedBackend` is a mock, not a model.** It exists so the
-  loop runs and is testable without an API key, and it is rule-based and
-  transparent. Real results require `--backend anthropic` (a frozen Claude
-  model). Don't read the offline demo's numbers as reproducing the paper's.
+- **Small local models are noisy optimizers.** The reflection step asks the
+  model to emit JSON edit operations; a 1.5B model occasionally produces
+  malformed JSON. That is handled gracefully (an unparseable proposal is a
+  no-op step, never a crash), but it means more steps get wasted than with a
+  frontier API model. Use `--backend openai` or a larger `--model` for a
+  stronger optimizer.
 - **Reported numbers are this demo's, not the paper's.** The paper reports
-  ~+19–25 point average gains across its grid. The 0%→100% here is specific to
-  the toy task and only shows the *mechanism* working.
+  ~+19–25 point average gains across its grid. Gains here are specific to the
+  toy task and the model you pick, and only show the *mechanism* working.
 
 The goal is a faithful, legible skeleton of the algorithm — small enough to read
 in one sitting — not a benchmark-grade reproduction.

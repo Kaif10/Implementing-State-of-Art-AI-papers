@@ -233,7 +233,7 @@ class PoTModel:
               flush=True)
         self.tok = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForCausalLM.from_pretrained(
-            model_name, torch_dtype=dtype
+            model_name, dtype=dtype
         ).to(self.device)
         self.model.eval()
         self.temperature = temperature

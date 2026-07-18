@@ -2,12 +2,12 @@
 
 Examples
 --------
-Offline demo (no API key needed):
+Local open-source model (no API key needed; downloads the model on first run):
     python train.py
 
-Real training with a frozen Claude model:
-    export ANTHROPIC_API_KEY=...
-    python train.py --backend anthropic
+Frozen OpenAI model via the API:
+    export OPENAI_API_KEY=...
+    python train.py --backend openai
 """
 
 from __future__ import annotations
@@ -15,9 +15,9 @@ from __future__ import annotations
 import argparse
 
 from skillopt import (
-    AnthropicBackend,
+    HuggingFaceBackend,
     NumberFormattingTask,
-    SimulatedBackend,
+    OpenAIBackend,
     SkillDocument,
     SkillOpt,
     SkillOptConfig,
@@ -28,11 +28,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Train a SkillOpt skill document.")
     parser.add_argument(
         "--backend",
-        choices=["simulated", "anthropic"],
-        default="simulated",
-        help="'simulated' runs offline; 'anthropic' uses a frozen Claude model.",
+        choices=["hf", "openai"],
+        default="hf",
+        help="'hf' runs an open-source model locally; 'openai' uses a frozen OpenAI model.",
     )
-    parser.add_argument("--model", default="claude-opus-4-8")
+    parser.add_argument(
+        "--model",
+        default=None,
+        help="model name (default: Qwen/Qwen2.5-1.5B-Instruct for hf, gpt-4.1-mini for openai)",
+    )
     parser.add_argument("--epochs", type=int, default=SkillOptConfig.epochs)
     parser.add_argument("--batch-size", type=int, default=SkillOptConfig.batch_size)
     parser.add_argument("--train-size", type=int, default=SkillOptConfig.train_size)
@@ -53,11 +57,10 @@ def main() -> None:
         seed=args.seed,
     )
 
-    backend = (
-        SimulatedBackend()
-        if args.backend == "simulated"
-        else AnthropicBackend(model=args.model)
-    )
+    if args.backend == "hf":
+        backend = HuggingFaceBackend(**({"model": args.model} if args.model else {}))
+    else:
+        backend = OpenAIBackend(**({"model": args.model} if args.model else {}))
 
     task = NumberFormattingTask()
     # Disjoint splits via different seeds.

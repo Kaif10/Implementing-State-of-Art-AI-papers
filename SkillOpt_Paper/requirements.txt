@@ -1,3 +1,7 @@
-# Only needed for the real (frozen-Claude) backend. The offline simulated
-# backend and the test suite require nothing beyond the Python standard library.
-anthropic>=0.40
+# Local open-source backend (the default).
+torch>=2.4
+transformers>=4.56   # uses the `dtype` kwarg (renamed from torch_dtype)
+accelerate>=0.33
+
+# Only needed for the OpenAI API backend (--backend openai).
+openai>=1.40

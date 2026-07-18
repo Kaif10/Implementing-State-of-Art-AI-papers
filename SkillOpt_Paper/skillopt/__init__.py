@@ -14,7 +14,7 @@ from .config import SkillOptConfig
 from .skill import SkillDocument
 from .optimizer import SkillOpt
 from .task import NumberFormattingTask, Example
-from .backends import AnthropicBackend, SimulatedBackend
+from .backends import HuggingFaceBackend, OpenAIBackend
 
 __all__ = [
     "SkillOptConfig",
@@ -22,6 +22,6 @@ __all__ = [
     "SkillOpt",
     "NumberFormattingTask",
     "Example",
-    "AnthropicBackend",
-    "SimulatedBackend",
+    "HuggingFaceBackend",
+    "OpenAIBackend",
 ]
