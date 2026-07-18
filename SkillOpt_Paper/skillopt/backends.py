@@ -47,14 +47,24 @@ def _extract_json(text: str) -> dict:
     """
     text = text.strip()
     text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text)
-    start, end = text.find("{"), text.rfind("}")
-    if start != -1 and end > start:
+    for open_ch, close_ch in (("{", "}"), ("[", "]")):
+        start, end = text.find(open_ch), text.rfind(close_ch)
+        if start == -1 or end <= start:
+            continue
         try:
             parsed = json.loads(text[start : end + 1])
-            if isinstance(parsed, dict):
-                return parsed
         except json.JSONDecodeError:
-            pass
+            continue
+        # Accept the equivalent shapes small models actually emit: the proper
+        # {"operations": [...]}, a bare list of operations, or a single op.
+        if isinstance(parsed, dict) and isinstance(parsed.get("operations"), list):
+            return parsed
+        if isinstance(parsed, list) and parsed and all(
+            isinstance(op, dict) and "action" in op for op in parsed
+        ):
+            return {"operations": parsed}
+        if isinstance(parsed, dict) and "action" in parsed:
+            return {"operations": [parsed]}
     return {"operations": []}
 
 
@@ -99,16 +109,17 @@ class HuggingFaceBackend(Backend):
             {"role": "user", "content": user},
         ]
         inputs = self.tokenizer.apply_chat_template(
-            messages, add_generation_prompt=True, return_tensors="pt"
+            messages, add_generation_prompt=True, return_tensors="pt", return_dict=True
         ).to(self.device)
         with self._torch.no_grad():
             output = self.model.generate(
-                inputs,
+                **inputs,
                 max_new_tokens=max_new_tokens,
                 do_sample=False,
                 pad_token_id=self.tokenizer.eos_token_id,
             )
-        return self.tokenizer.decode(output[0, inputs.shape[1]:], skip_special_tokens=True).strip()
+        prompt_len = inputs["input_ids"].shape[1]
+        return self.tokenizer.decode(output[0, prompt_len:], skip_special_tokens=True).strip()
 
     def answer(self, skill_text: str, question: str) -> str:
         system = _ANSWER_SYSTEM.format(skill=skill_text or "(no guidance yet)")

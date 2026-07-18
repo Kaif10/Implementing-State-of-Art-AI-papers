@@ -11,6 +11,7 @@ Run with:  python -m pytest -q   (or)   python tests/test_end_to_end.py
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
 import sys
 
@@ -59,13 +60,17 @@ def test_gold_formatting():
 def test_json_extraction_is_robust():
     from skillopt.backends import _extract_json
 
-    ops = {"operations": [{"action": "add", "index": 0, "text": "rule"}]}
+    op = {"action": "add", "index": 0, "text": "rule"}
+    ops = {"operations": [op]}
     fenced = '```json\n{"operations": [{"action": "add", "index": 0, "text": "rule"}]}\n```'
     prosy = 'Here are my edits: {"operations": []} hope that helps!'
     assert _extract_json(fenced) == ops
     assert _extract_json(prosy) == {"operations": []}
     assert _extract_json("no json at all") == {"operations": []}
     assert _extract_json("[1, 2, 3]") == {"operations": []}
+    # Equivalent shapes small models actually emit are accepted, not wasted:
+    assert _extract_json(json.dumps(op)) == ops          # single bare operation
+    assert _extract_json(json.dumps([op])) == ops        # bare list of operations
 
 
 def test_training_end_to_end_with_local_model():
