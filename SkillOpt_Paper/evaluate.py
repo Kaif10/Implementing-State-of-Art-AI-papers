@@ -27,12 +27,19 @@ def main() -> None:
         default=None,
         help="model name (default: Qwen/Qwen2.5-1.5B-Instruct for hf, gpt-4.1-mini for openai)",
     )
+    parser.add_argument(
+        "--dtype",
+        default=None,
+        choices=["float32", "bfloat16", "float16"],
+        help="hf only: model dtype (bfloat16 halves memory on low-RAM machines)",
+    )
     parser.add_argument("--test-size", type=int, default=100)
     parser.add_argument("--seed", type=int, default=12345)
     args = parser.parse_args()
 
     if args.backend == "hf":
-        backend = HuggingFaceBackend(**({"model": args.model} if args.model else {}))
+        kwargs = {"model": args.model} if args.model else {}
+        backend = HuggingFaceBackend(dtype=args.dtype, **kwargs)
     else:
         backend = OpenAIBackend(**({"model": args.model} if args.model else {}))
     task = NumberFormattingTask()

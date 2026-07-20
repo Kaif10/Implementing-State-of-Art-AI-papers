@@ -37,6 +37,12 @@ def main() -> None:
         default=None,
         help="model name (default: Qwen/Qwen2.5-1.5B-Instruct for hf, gpt-4.1-mini for openai)",
     )
+    parser.add_argument(
+        "--dtype",
+        default=None,
+        choices=["float32", "bfloat16", "float16"],
+        help="hf only: model dtype (bfloat16 halves memory on low-RAM machines)",
+    )
     parser.add_argument("--epochs", type=int, default=SkillOptConfig.epochs)
     parser.add_argument("--batch-size", type=int, default=SkillOptConfig.batch_size)
     parser.add_argument("--train-size", type=int, default=SkillOptConfig.train_size)
@@ -58,7 +64,8 @@ def main() -> None:
     )
 
     if args.backend == "hf":
-        backend = HuggingFaceBackend(**({"model": args.model} if args.model else {}))
+        kwargs = {"model": args.model} if args.model else {}
+        backend = HuggingFaceBackend(dtype=args.dtype, **kwargs)
     else:
         backend = OpenAIBackend(**({"model": args.model} if args.model else {}))
 

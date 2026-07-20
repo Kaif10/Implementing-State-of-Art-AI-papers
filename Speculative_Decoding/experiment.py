@@ -20,9 +20,14 @@ paper's headline 2-3x (large target => c -> 0).
 """
 
 import argparse
+import sys
 import time
 
 import torch
+
+# Windows consoles default to cp1252, which cannot print the Greek letters below.
+if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
+    sys.stdout.reconfigure(encoding="utf-8")
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from speculative_decoding import (autoregressive_generate_cached,
@@ -120,7 +125,7 @@ def main():
     print(f"{'K':>3}{'predicted speedup @ α=0.75':>30}")
     for K in [3, 5, 8]:
         print(f"{K:>3}{predicted_speedup(K, 0.75, 0.02):>29.2f}x")
-    print("\n=> On this Mac, c is large (per-kernel overhead dominates a tiny draft),")
+    print("\n=> On this machine, c is large (per-kernel overhead dominates a tiny draft),")
     print("   so wall-clock speedup is modest BUT matches the paper's formula. The")
     print("   acceptance rate and the formula are exactly the paper's; only the")
     print("   hardware regime differs from their 2-3x.")

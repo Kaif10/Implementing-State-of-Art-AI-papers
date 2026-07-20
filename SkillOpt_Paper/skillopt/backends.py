@@ -88,7 +88,12 @@ class HuggingFaceBackend(Backend):
     a laptop. Decoding is greedy, so runs are reproducible.
     """
 
-    def __init__(self, model: str = "Qwen/Qwen2.5-1.5B-Instruct", device: str | None = None):
+    def __init__(
+        self,
+        model: str = "Qwen/Qwen2.5-1.5B-Instruct",
+        device: str | None = None,
+        dtype: str | None = None,
+    ):
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -99,8 +104,14 @@ class HuggingFaceBackend(Backend):
             else "cpu"
         )
         self.tokenizer = AutoTokenizer.from_pretrained(model)
-        dtype = torch.float16 if self.device != "cpu" else torch.float32
-        self.model = AutoModelForCausalLM.from_pretrained(model, dtype=dtype).to(self.device)
+        # bfloat16 halves memory on CPU (useful for low-RAM machines); fp32 is
+        # the safe CPU default, fp16 the GPU/MPS default.
+        torch_dtype = (
+            getattr(torch, dtype) if dtype
+            else torch.float16 if self.device != "cpu"
+            else torch.float32
+        )
+        self.model = AutoModelForCausalLM.from_pretrained(model, dtype=torch_dtype).to(self.device)
         self.model.eval()
 
     def _generate(self, system: str, user: str, max_new_tokens: int) -> str:
