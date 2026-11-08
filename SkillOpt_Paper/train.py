@@ -13,6 +13,7 @@ Frozen OpenAI model via the API:
 from __future__ import annotations
 
 import argparse
+from skillopt.task import generate_disjoint_splits
 
 from skillopt import (
     HuggingFaceBackend,
@@ -70,10 +71,9 @@ def main() -> None:
         backend = OpenAIBackend(**({"model": args.model} if args.model else {}))
 
     task = NumberFormattingTask()
-    # Disjoint splits via different seeds.
-    train = task.generate(config.train_size, seed=config.seed)
-    val = task.generate(config.val_size, seed=config.seed + 1000)
-    test = task.generate(config.test_size, seed=config.seed + 2000)
+    train, val, test = generate_disjoint_splits(
+        task, (config.train_size, config.val_size, config.test_size), config.seed
+    )
 
     print(f"task: {task.name} ({task.description})")
     print(f"backend: {args.backend}\n")

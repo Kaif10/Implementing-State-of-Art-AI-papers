@@ -195,11 +195,15 @@ def judge(llm: LLM, task: Task, answer: str) -> EvalResult:
 
 
     obj = parse_json_object(raw, required_keys=("passed",))
-    if not obj:
-        return EvalResult(False, "Evaluator output was not valid JSON.")
-    passed = bool(obj["passed"])
+    if not obj or type(obj.get("passed")) is not bool:
+        return EvalResult(False, "Evaluator output must contain a JSON boolean 'passed'.")
+    passed = obj["passed"]
     must_fix = obj.get("must_fix", [])
     feedback = obj.get("feedback", "")
+    if not isinstance(feedback, str) or not isinstance(must_fix, list) or any(
+        not isinstance(item, str) for item in must_fix
+    ):
+        return EvalResult(False, "Evaluator feedback or must_fix has an invalid type.")
 
     # fold must_fix into feedback so your reflector sees it even if you keep EvalResult simple
     if (not passed) and must_fix:

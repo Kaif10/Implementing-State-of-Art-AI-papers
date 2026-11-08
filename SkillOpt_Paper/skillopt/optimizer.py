@@ -11,8 +11,9 @@ This is the algorithm from the paper, in plain terms. Each step:
                    ONLY if it strictly beats the current skill's validation
                    score. Otherwise discard it and remember it as a bad edit.
 
-Repeated over several epochs, the skill steadily accumulates guidance that
-helps without overfitting -- because every change has to pass the gate.
+Repeated over several epochs, the skill is selected using validation scores.
+Repeated selection can overfit that set; only an untouched test set estimates
+generalization, and its score can decrease even when validation improves.
 """
 
 from __future__ import annotations
@@ -195,6 +196,11 @@ For "add", index is ignored. For "delete", text is ignored."""
                     _EDIT_SCHEMA,
                 )
                 operations = proposal.get("operations", []) if isinstance(proposal, dict) else []
+                operations = [
+                    op for op in operations
+                    if isinstance(op, dict) and isinstance(op.get("action"), str)
+                    and isinstance(op.get("text", ""), str)
+                ] if isinstance(operations, list) else []
                 candidate = working.apply(operations, cfg.learning_rate)
 
                 # The optimizer proposed nothing usable.

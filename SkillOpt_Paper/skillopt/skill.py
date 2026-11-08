@@ -45,7 +45,9 @@ class SkillDocument:
         applied together, so several edits in one step don't shift each other's
         targets.
         """
-        ops = operations[:max_edits]
+        if max_edits < 0:
+            raise ValueError("max_edits must be nonnegative")
+        ops = operations[:max_edits] if isinstance(operations, list) else []
         n = len(self.lines)
 
         replace: dict[int, str] = {}
@@ -53,6 +55,10 @@ class SkillDocument:
         additions: list[str] = []
 
         for op in ops:
+            if not isinstance(op, dict):
+                continue
+            if not isinstance(op.get("action"), str) or not isinstance(op.get("text", ""), str):
+                continue
             action = (op.get("action") or "").strip().lower()
             text = (op.get("text") or "").strip()
             try:
@@ -83,13 +89,13 @@ class SkillDocument:
         return isinstance(other, SkillDocument) and self.lines == other.lines
 
     def save(self, path: str) -> None:
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             f.write(self.render())
 
     @classmethod
     def load(cls, path: str) -> "SkillDocument":
         lines: list[str] = []
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             for raw in f:
                 raw = raw.rstrip("\n")
                 if raw.startswith("- "):

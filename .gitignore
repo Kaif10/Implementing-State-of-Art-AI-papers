@@ -8,3 +8,6 @@ __pycache__/
 .vscode/
 .idea/
 logs/
+
+.pytest_cache/
+.benchmarks/

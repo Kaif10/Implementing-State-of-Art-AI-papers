@@ -1,6 +1,6 @@
 # FLARE: Forward-Looking Active REtrieval-Augmented Generation
 
-Faithful implementation of the FLARE paper (https://arxiv.org/abs/2305.06983).
+API-based implementation of the FLARE retrieval loop (https://arxiv.org/abs/2305.06983).
 
 ## How FLARE Works (Paper Algorithm)
 
@@ -106,22 +106,18 @@ Place text files (`.txt` or `.md`) in the `data/` directory. Example files are p
 - `data/history_renaissance.txt`
 - `data/technology_blockchain.txt`
 
-## Implementation Notes
+## Implementation notes
 
-This is a faithful implementation of the FLARE algorithm from the paper:
+- Confidence is calculated only over tokens overlapping the selected first sentence.
+- `theta` (default `0.4`) triggers retrieval when a sentence token falls below it.
+- `beta` (default `0.4`) removes low-confidence tokens from the retrieval query.
+- Token bytes preserve alignment across Unicode characters. Missing or misaligned
+  logprobs trigger conservative retrieval; an empty filtered query uses the question.
+- Retrieval uses local BM25. Sentence boundaries and completion detection are simple
+  heuristics; the bundled question runner prints outputs for inspection.
 
-1. **Forward-looking generation**: Generates temporary next sentence before finalizing
-2. **Confidence-based retrieval**: Checks token probabilities; retrieves if < threshold (paper: 0.05)
-3. **Sentence mask threshold**: Falls back to ratio of uncertain tokens if logprobs unavailable (paper: 0.1)
-4. **FLARE-direct approach**: Uses generated sentence as retrieval query
-5. **Sentence-by-sentence**: Builds answer incrementally with active retrieval
+```bash
+python -m unittest discover -s tests -v
+```
 
-**Paper thresholds implemented**:
-- `confidence_threshold = 0.05` (5% token probability threshold)
-- `sentence_mask_threshold = 0.1` (10% ratio of uncertain tokens in sentence)
-
-**Differences from paper**:
-- Uses OpenAI API logprobs instead of custom model logprobs
-- BM25 retrieval instead of DPR/Elasticsearch
-
-Requires `OPENAI_API_KEY` environment variable.
+Offline tests need `openai`; no API key or model calls are required.

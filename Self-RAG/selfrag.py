@@ -4,27 +4,28 @@ import re
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Literal, TYPE_CHECKING
 
 from openai import OpenAI
 from pydantic import BaseModel, Field
 
-from kb_index import Chunk, FaissKB
+if TYPE_CHECKING:
+    from kb_index import Chunk, FaissKB
 
 
 # Structured Outputs (Pydantic)
 
 
 class RetrieveDecision(BaseModel):
-    decision: str = Field(description="yes, no, or continue")
+    decision: Literal["yes", "no", "continue"]
     query: str = Field(description="search query if decision=yes, else empty")
 
 
 class CritiqueLabels(BaseModel):
-    isrel: str = Field(description="relevant or irrelevant")
-    issup: str = Field(description="fully_supported, partially_supported, or no_support")
-    isuse: int = Field(description="usefulness 1-5")
-    is_final: bool = Field(description="true if the answer is complete after this sentence")
+    isrel: Literal["relevant", "irrelevant"]
+    issup: Literal["fully_supported", "partially_supported", "no_support"]
+    isuse: Literal[1, 2, 3, 4, 5] = Field(description="usefulness 1-5")
+    is_final: bool = Field(strict=True, description="true if the answer is complete after this sentence")
 
 
 class PassageCandidate(BaseModel):
@@ -34,8 +35,8 @@ class PassageCandidate(BaseModel):
 
 class NoCtxStep(BaseModel):
     sentence: str = Field(description="exactly one next sentence")
-    isuse: int = Field(description="usefulness 1-5")
-    is_final: bool
+    isuse: Literal[1, 2, 3, 4, 5] = Field(description="usefulness 1-5")
+    is_final: bool = Field(strict=True)
 
 
 
@@ -89,6 +90,11 @@ class Beam:
     score: float
     done: bool = False
 
+    @property
+    def mean_score(self) -> float:
+        """Rank by mean segment critique so extra sentences earn no free reward."""
+        return self.score / max(1, len(self.draft))
+
 
 # ---------------------------
 # Self-RAG (simple critique version)
@@ -126,6 +132,10 @@ class SelfRAG:
         max_retries: int = 3,
         retry_base_delay: float = 0.5,
     ):
+        if min(top_k, per_step_passages, max_steps) < 1:
+            raise ValueError("top_k, per_step_passages, and max_steps must be positive")
+        if max_retries < 0 or retry_base_delay < 0:
+            raise ValueError("Retry count and delay must be nonnegative")
         self.client = client
         self.kb = kb
         self.model = model
@@ -152,12 +162,15 @@ class SelfRAG:
         last_err: Optional[Exception] = None
         for attempt in range(self.max_retries + 1):
             try:
-                return self.client.responses.parse(
+                parsed = self.client.responses.parse(
                     model=self.model,
                     temperature=self.temperature,
                     input=messages,
                     text_format=text_format,
                 ).output_parsed
+                if parsed is None:
+                    raise ValueError("Model returned no parsed output (refusal or incomplete response)")
+                return parsed
             except Exception as e:
                 last_err = e
                 msg = str(e).lower()
@@ -318,7 +331,7 @@ Return NoCtxStep.""",
     def _accept(self, isrel: str, issup: str) -> bool:
         if self.require_relevant and (isrel or "").strip().lower() != "relevant":
             return False
-        if self.require_supported and (issup or "").strip().lower() == "no_support":
+        if self.require_supported and (issup or "").strip().lower() not in {"fully_supported", "partially_supported"}:
             return False
         return True
 
@@ -334,6 +347,8 @@ Return NoCtxStep.""",
     # ---------------------------
 
     def answer(self, question: str, *, beam_size: int = 1) -> str:
+        if beam_size < 1:
+            raise ValueError("beam_size must be positive")
         if beam_size <= 1:
             return self._answer_greedy(question)
         return self._answer_beam(question, beam_size)
@@ -419,6 +434,7 @@ Return NoCtxStep.""",
 
                 if ctx:
                     passages = ctx[: self.per_step_passages]
+                    before_expansion = len(expanded)
                     for p in passages:
                         cand = self.generate_candidate(question, draft_txt, p)
                         if not cand.sentence:
@@ -435,6 +451,14 @@ Return NoCtxStep.""",
                                 done=bool(cand.critique.is_final),
                             )
                         )
+                    if len(expanded) == before_expansion:
+                        step = self.generate_noctx(question, draft_txt)
+                        if step.sentence:
+                            expanded.append(Beam(
+                                draft=b.draft + [step.sentence], ctx=[],
+                                score=b.score + self.w_use * _use_score(step.isuse),
+                                done=bool(step.is_final),
+                            ))
                 else:
                     step = self.generate_noctx(question, draft_txt)
                     if not step.sentence:
@@ -457,12 +481,12 @@ Return NoCtxStep.""",
             for eb in expanded:
                 key = " ".join(eb.draft)
                 prev = uniq.get(key)
-                if prev is None or eb.score > prev.score:
+                if prev is None or eb.mean_score > prev.mean_score:
                     uniq[key] = eb
 
-            beams = sorted(uniq.values(), key=lambda x: x.score, reverse=True)[:beam_size]
+            beams = sorted(uniq.values(), key=lambda x: x.mean_score, reverse=True)[:beam_size]
             if all(b.done for b in beams):
                 break
 
-        best = max(beams, key=lambda x: x.score)
+        best = max(beams, key=lambda x: x.mean_score)
         return " ".join(best.draft).strip()

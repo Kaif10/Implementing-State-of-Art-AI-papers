@@ -1,8 +1,8 @@
 """The built-in demo task.
 
 A task is just: a way to make question/answer pairs, and a way to grade an
-answer. The optimizer never sees the gold answers during a rollout -- it only
-sees whether the model got each one right.
+answer. The agent does not see gold answers during rollout. The optimizer
+receives failed predictions alongside gold answers in the reflection prompt.
 
 NumberFormattingTask is designed so that a *skill* is genuinely useful: the
 math is easy, but the correct answer must follow three "house rules" that a
@@ -28,6 +28,28 @@ from dataclasses import dataclass
 class Example:
     question: str
     answer: str
+
+
+def generate_disjoint_splits(task, sizes: tuple[int, ...], seed: int) -> list[list[Example]]:
+    """Generate unique questions across all splits, with deterministic retry seeds."""
+    if any(size < 0 for size in sizes):
+        raise ValueError("split sizes must be nonnegative")
+    seen: set[str] = set()
+    splits: list[list[Example]] = []
+    for split_index, size in enumerate(sizes):
+        split: list[Example] = []
+        for attempt in range(100):
+            if len(split) == size:
+                break
+            for example in task.generate(size - len(split), seed + split_index * 1000 + attempt):
+                key = " ".join(example.question.casefold().split())
+                if key not in seen:
+                    seen.add(key)
+                    split.append(example)
+        if len(split) != size:
+            raise ValueError("Could not generate enough distinct questions for the requested splits")
+        splits.append(split)
+    return splits
 
 
 def format_gold(value: float) -> str:

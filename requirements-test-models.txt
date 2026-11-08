@@ -1,0 +1,3 @@
+-r requirements-test.txt
+torch==2.5.1
+transformers==4.57.1

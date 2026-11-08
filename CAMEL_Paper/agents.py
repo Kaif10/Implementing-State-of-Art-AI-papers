@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from functools import cached_property
 from typing import Literal, Protocol
 from openai import OpenAI
 
@@ -23,16 +24,19 @@ class OpenAIChatClient:
     Minimal OpenAI chat wrapper.
 
     - One client instance (no per-call re-init)
-    - Deterministic by default (temperature=0)
+    - Greedy sampling by default (temperature=0)
     """
 
     model: str
     api_key: str | None = None
     temperature: float = 0.0
 
+    @cached_property
+    def client(self):
+        return OpenAI(api_key=self.api_key)
+
     def complete(self, messages: list[ChatMessage]) -> str:
-        client = OpenAI(api_key=self.api_key)
-        resp = client.chat.completions.create(
+        resp = self.client.chat.completions.create(
             model=self.model,
             messages=[{"role": m.role, "content": m.content} for m in messages],
             temperature=self.temperature,

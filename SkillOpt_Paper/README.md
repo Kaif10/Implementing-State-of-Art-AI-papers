@@ -67,16 +67,19 @@ python evaluate.py best_skill.md
 This runs the whole loop end to end against a real, frozen open-source model
 (`Qwen/Qwen2.5-1.5B-Instruct` by default — pass `--model` for any HF causal LM
 with a chat template). It prints the training trace, the learned skill, a
-held-out before/after comparison, and writes `best_skill.md`. Runs on CPU,
+held-out before/after comparison, and writes `best_skill.md`. Validation selects
+edits; a separate test split measures the final result. Runs on CPU,
 CUDA, or Apple Silicon (auto-detected); greedy decoding, so runs are
 reproducible.
 
 ```bash
-python tests/test_end_to_end.py   # or: python -m pytest -q
+python -m pip install pytest
+python -m pytest -q
 ```
 
-The logic tests need nothing installed; the end-to-end test uses the local
-model and is skipped if torch/transformers are missing.
+Install `pytest` for the offline logic tests. The local-model integration test
+is opt-in: set `RUN_MODEL_TESTS=1` before running pytest; it may download model
+weights. Default test runs make no model or API calls.
 
 ### Frozen OpenAI model via the API
 
@@ -103,8 +106,8 @@ can't guess:
 
 A model with no skill gets these wrong; SkillOpt has to *discover the rules from
 the model's mistakes* and write them into the skill. That makes the skill
-causally responsible for the accuracy gain — the point of the paper. On the
-offline demo it goes from 0% to 100% on a held-out test set.
+causally responsible for the accuracy gain — the point of the paper. Training reports the measured before/after test scores for the selected model.
+The generated train, validation, and test splits contain distinct questions.
 
 Swap in your own task by providing `generate(n, seed) -> [Example]` and
 `grade(predicted, gold) -> bool` (see `skillopt/task.py`).
@@ -140,7 +143,7 @@ tests/           offline end-to-end tests
 | held-out validation gate          | accept edit iff `candidate_val > working_val` (`optimizer.py`)  |
 | rejected-edit buffer              | `rejected` list fed back into the reflection prompt             |
 | epoch-wise slow / meta update     | `meta_notes` carried across steps; best-by-validation tracked   |
-| deployable `best_skill.md`        | `SkillDocument.save(...)`; zero inference-time overhead         |
+| deployable `best_skill.md`        | `SkillDocument.save(...)`; no extra inference calls         |
 
 ---
 

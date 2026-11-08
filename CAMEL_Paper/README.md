@@ -49,3 +49,7 @@ python run.py --mode code --task "Build a simple backtest function" --domain Fin
 - `session.py`: task specification, parsing, and termination logic
 - `run.py`: CLI entry point
 
+
+## Offline checks
+
+From this folder, run `python -m pytest tests -q` after installing its requirements and `pytest`. These checks use scripted responses and make no API calls.

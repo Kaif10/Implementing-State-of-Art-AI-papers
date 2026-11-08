@@ -1,8 +1,20 @@
 # Implementing SOTA AI Papers
 
-This repo is a collection  implementations of some of the best and my favourite research publications in the space of AI in recent years with focus on Generative AI.
-All implementations are in Python.
-Each folder corresponds to one paper and aims to capture the core algorithmic ideas with practical, minimal code (I have skipped experimentations/comparisons, only focusing on the core methodology)
+Readable Python implementations of research ideas in LLM inference, reasoning,
+retrieval, and agent coordination. Each project makes its core algorithm explicit
+and includes paper-specific notes and runnable examples.
+
+## Start here
+
+- **[Speculative decoding](Speculative_Decoding)**: draft/verify sampling, KV-cache
+  management, correctness checks, and a latency experiment.
+- **[Program of Thoughts](Program_of_Thoughts)**: generate Python solutions, execute
+  them, and evaluate answers on GSM8K with per-example output records.
+- **[SkillOpt](SkillOpt_Paper)**: optimize a skill document with a frozen model,
+  bounded edits, and validation-based selection.
+
+The collection includes both algorithm demonstrations and evaluation scripts.
+Project READMEs describe the implemented scope, model choices, and commands.
 
 ## Implemented papers
 
@@ -21,13 +33,43 @@ Each folder corresponds to one paper and aims to capture the core algorithmic id
 | [SkillOpt_Paper](SkillOpt_Paper) | [SkillOpt: Executive Strategy for Self-Evolving Agent Skills](https://arxiv.org/abs/2605.23904) |
 | [Speculative_Decoding](Speculative_Decoding) | [Fast Inference from Transformers via Speculative Decoding](https://arxiv.org/abs/2211.17192) |
 
-## Structure
+## Setup and tests
 
-- Each folder includes its own `README.md` with paper-specific notes, differences in the implementations, and how to run
-- Scripts are kept simple and something you can implement and play around with too.
+Use **Python 3.12**. Install a project's `requirements.txt` in a virtual environment
+(or follow its README for notebook-specific setup). API-backed examples read
+`OPENAI_API_KEY` from the environment; local model examples document their model
+and hardware requirements.
 
-## What to expect
+Run the lightweight regression suite from the repository root:
 
-- Algorithmic flow as close and faithful to the original paper as possible
-- You can expect explicit caveats like when a paper uses finetuning, I might have used off the shelf LLM API, but I have mentioned all caveats/exceptions I made to the original paper in the respective READMEs
+```bash
+python -m pip install -r requirements-test.txt
+python scripts/run_tests.py
+```
 
+Include the decoding tests with CPU PyTorch and Transformers installed:
+
+```bash
+python -m pip install -r requirements-test-models.txt
+python scripts/run_tests.py --include-models
+```
+
+These tests exercise scoring, data separation, prompt budgets, agent state,
+retrieval decisions, and decoding mechanics using fixtures and small synthetic
+models. They require no API keys or pretrained model downloads. GitHub Actions
+runs the complete offline suite. Live-model experiments are separate commands
+in the project READMEs.
+
+## Reproducing an experiment
+
+Record the command, commit, dataset split, model revision, sampling settings,
+software versions, hardware, and seed alongside the output. Preserve per-example
+predictions and raw timings so comparisons can be inspected. Use the same examples
+and account for all model calls when comparing methods.
+
+## Project layout
+
+Each folder is self-contained, with its own paper link, implementation notes,
+and entry point. The implementations prioritize readable core mechanisms;
+API-based adaptations and inference-only implementations are identified in their
+project documentation.

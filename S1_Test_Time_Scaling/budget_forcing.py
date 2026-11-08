@@ -80,14 +80,14 @@ class BudgetForcer:
         )
         # Make sure we have actually *entered* the thinking block. Some chat
         # templates already append "<think>"; if not, we add it ourselves.
-        if self.think_open not in text.split("assistant")[-1]:
+        if not text.rstrip().endswith(self.think_open):
             text += f"{self.think_open}\n"
         return text
 
     # --- one chunk of greedy/sampled generation ------------------------------
 
     @torch.no_grad()
-    def _generate_segment(self, text: str, max_new_tokens: int, sample, temperature, top_p):
+    def _generate_segment(self, text: str, max_new_tokens: int, sample, temperature, top_p, *, stop_thinking=True):
         ids = self.tokenizer(
             text, return_tensors="pt", add_special_tokens=False
         ).input_ids.to(self.device)
@@ -97,12 +97,16 @@ class BudgetForcer:
             do_sample=sample,
             temperature=temperature if sample else None,
             top_p=top_p if sample else None,
-            stop_strings=[self.think_close],   # stop as soon as it tries to end thinking
+            stop_strings=[self.think_close] if stop_thinking else None,   # stop as soon as it tries to end thinking
             tokenizer=self.tokenizer,
             pad_token_id=self.tokenizer.eos_token_id,
         )
         new_ids = out[0][ids.shape[1]:]
-        seg = self.tokenizer.decode(new_ids, skip_special_tokens=True)
+        # Preserve the thinking delimiter even when the tokenizer marks it special.
+        seg = self.tokenizer.decode(new_ids, skip_special_tokens=not stop_thinking)
+        eos = self.tokenizer.eos_token
+        if eos and seg.endswith(eos):
+            seg = seg[:-len(eos)]
         return seg, int(new_ids.shape[0])
 
     # --- the public entry point: generate with budget forcing ----------------
@@ -120,6 +124,12 @@ class BudgetForcer:
         top_p: float = 0.95,
         verbose: bool = False,
     ) -> Result:
+        if max_thinking_tokens < 1 or answer_max_tokens < 1:
+            raise ValueError("thinking and answer token budgets must be positive")
+        if num_ignore < 0:
+            raise ValueError("num_ignore must be nonnegative")
+        if num_ignore and not wait_phrase.strip():
+            raise ValueError("wait_phrase must not be empty when extending thinking")
         prefix = self._build_prefix(question, system_prompt)
         running = prefix
         thinking = ""
@@ -167,7 +177,7 @@ class BudgetForcer:
 
         # Now generate the final answer (after </think>), stopping at EOS.
         answer, _ = self._generate_segment(
-            running, answer_max_tokens, sample, temperature, top_p
+            running, answer_max_tokens, sample, temperature, top_p, stop_thinking=False
         )
         # answer segment may still trip the </think> stop string; strip it.
         answer = answer.replace(self.think_close, "").strip()

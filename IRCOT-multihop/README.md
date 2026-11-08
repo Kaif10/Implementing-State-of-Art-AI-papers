@@ -308,18 +308,22 @@ The `tune` command will output accuracy scores for different K/M combinations an
 ## Implementation Notes
 
 - **Retrieval**: Uses BM25 retrieval from LlamaIndex
-- **Chunking**: Documents are split into chunks of 512 characters with 20 character overlap
+- **Chunking**: Documents are split into chunks of 512 tokens with 20 token overlap
 - **Max Steps**: Default is 8 iterative retrieval steps
 - **Document Cap**: Maximum 15 documents collected per question
 - **Context Limit**: Maximum 12,000 characters in context
 
-## Known Issues and Shortcomings
+## Evaluation and checks
 
-**⚠️ Important**: This implementation has several issues that need to be addressed. See `ISSUES.md` for a detailed list.
+The five bundled development questions combine facts from the small example corpus;
+`supporting_documents` records the intended evidence. They are disjoint from the
+few-shot questions. Tuning checks normalized question overlap before any API calls.
+These examples are a smoke evaluation; use a larger independent test split for
+performance comparisons. Review semantic duplicates as well as exact overlap.
 
-**Critical Issues**:
-1. **API Call Format**: Uses `client.responses.create()` which may not work with standard OpenAI SDK
-2. **Missing Error Handling**: No retry logic or error handling for API failures
-3. **Hardcoded Parameters**: Many parameters are hardcoded and not configurable
+```bash
+python -m unittest discover -s tests -v
+```
 
-See `ISSUES.md` for the complete list of issues and recommendations.
+The offline tests need `openai` but no API key or retrieval dependencies.
+See `ISSUES.md` for implementation scope.

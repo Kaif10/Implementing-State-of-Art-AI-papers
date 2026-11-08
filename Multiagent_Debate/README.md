@@ -61,3 +61,9 @@ python run_mad.py --task biography --query "Alan Turing" --bio_facts_file facts.
 - `run_mad.py`: CLI entry point
 - `mad_bio_eval.py`: optional biography evaluation (Appendix A.2-style)
 
+
+## Offline checks
+
+From this folder, run `python -m pytest tests -q` after installing its requirements and `pytest`. These checks use scripted responses and make no API calls.
+
+For sampling diversity, set `--temperature 0.7`. The default `0.0` is useful for debugging; separate calls with the same prompt can produce the same answer. Compare debate with independent sampling under the same total token budget when evaluating accuracy.

@@ -34,6 +34,7 @@ import tempfile
 import time
 from dataclasses import dataclass, asdict
 from typing import Optional
+from fractions import Fraction
 
 # ----------------------------------------------------------------------------
 # 1. The PoT prompt: few-shot examples that teach the model to emit Python whose
@@ -158,7 +159,7 @@ def execute_code(code: str, timeout: float = 10.0) -> tuple[Optional[str], str]:
         f"        print('{_ANS_TAG}', eval(_n)); break\n"
     )
     program = code + selector
-    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
+    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False, encoding="utf-8") as f:
         f.write(program)
         path = f.name
     try:
@@ -186,26 +187,37 @@ def execute_code(code: str, timeout: float = 10.0) -> tuple[Optional[str], str]:
 # 4. Numeric answer parsing / comparison.
 # ----------------------------------------------------------------------------
 
-def to_number(x: object) -> Optional[float]:
-    """Best-effort parse of a value into a float. Returns None if impossible."""
+def to_number(x: object) -> Optional[Fraction]:
+    """Parse a complete finite numeric answer without extracting numbers from prose.
+
+    Accept decimals, scientific notation, fractions, and correctly grouped commas.
+    Currency and percent suffixes are presentation only (50% is graded as 50).
+    Fractions avoid rounding away differences in large integer answers.
+    """
     if x is None:
         return None
-    s = str(x).strip().replace(",", "").replace("$", "").replace("%", "")
-    # Grab the first number-looking token (handles "18.0", "-3", "42 dollars").
-    m = re.search(r"-?\d+\.?\d*", s)
-    if not m:
+    s = str(x).strip()
+    if s.startswith("$"):
+        s = s[1:].strip()
+    if s.endswith("%"):
+        s = s[:-1].strip()
+    number = r"[+-]?(?:(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?"
+    if not re.fullmatch(rf"{number}(?:\s*/\s*{number})?", s):
         return None
     try:
-        return float(m.group())
-    except ValueError:
+        parts = s.replace(",", "").split("/")
+        value = Fraction(parts[0].strip())
+        return value if len(parts) == 1 else value / Fraction(parts[1].strip())
+    except (ValueError, ZeroDivisionError, OverflowError):
         return None
 
 
-def is_correct(pred: Optional[str], gold: str, tol: float = 1e-3) -> bool:
+def is_correct(pred: Optional[str], gold: str, tol: float = 0.0) -> bool:
+    """Exact numeric equivalence by default; optional tolerance is absolute."""
     p, g = to_number(pred), to_number(gold)
     if p is None or g is None:
         return False
-    return abs(p - g) <= tol * max(1.0, abs(g))
+    return abs(p - g) <= Fraction(str(tol))
 
 
 def gsm8k_gold(answer_field: str) -> str:
@@ -338,7 +350,7 @@ def main():
     results: list[Result] = []
     correct = 0
     status_counts: dict[str, int] = {}
-    with open(args.output, "w") as fout:
+    with open(args.output, "w", encoding="utf-8") as fout:
         for i, (q, gold) in enumerate(data, 1):
             r = solve(model, q, gold, exec_timeout=args.exec_timeout)
             results.append(r)

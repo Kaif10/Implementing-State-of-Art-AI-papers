@@ -84,3 +84,9 @@ python run.py --input_file doc_test.txt --task_requirements_file req_qa.txt --qu
 
 
 
+
+## Offline checks
+
+From this folder, run `python -m pytest tests -q` after installing its requirements and `pytest`. These checks use scripted responses and make no API calls.
+
+`k` is the input-text token budget. Reserve room separately for output tokens and provider message overhead when selecting a model context limit. Oversized sentences are split without breaking Unicode characters, and assembled worker/manager prompts are checked before generation.

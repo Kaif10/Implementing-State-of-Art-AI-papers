@@ -21,3 +21,17 @@ Paper: [Self-Consistency Improves Chain of Thought Reasoning in Language Models]
 - `TASK`: `arithmetic` or `commonsense`
 - `question`: the prompt to solve
 
+
+## Reproducible use
+
+Run the notebook from this directory so `answer_parsing.py` is importable
+(or upload that file alongside the notebook in Colab). Set `GenCfg.seed` to
+record the sampling seed. Numeric votes normalize equivalent forms such as
+`1000`, `1,000.0`, and `1e3`; unparsed outputs abstain and the notebook reports
+how many samples were parsed. The saved outputs are demonstrations on individual
+questions, not dataset accuracy measurements.
+
+```bash
+python -m pip install pytest
+python -m pytest test_answer_parsing.py -q
+```

@@ -9,13 +9,13 @@ Paper: [Reflexion: Language Agents with Verbal Reinforcement Learning](https://a
 3) A reflector summarizes lessons from the attempt and feedback.
 4) The actor retries with a memory of recent reflections.
 5) Repeat until the task passes or the trial limit is reached.
-6) The actor receives the full reflection memory at each iteration (caution: memory growth increases input tokens).
+6) The actor receives the most recent `omega` reflections at each iteration.
 
 ## Exceptions in this repo
 
 - CoT-based Reflexion only; the ReAct/tool-calling variant is not implemented yet.
 - The evaluator is LLM-based judge instead of environment reward or task-specific tests as in the paper.
-- Actor and evaluator outputs are parsed from JSON; failures fall back to raw text.
+- Actor outputs fall back to raw text on parse failure; invalid evaluator responses fail closed.
 - Reflection memory is single-task only; the paper also explores cross-task memory which I personally thought was not really needed at a simpler level.
 
 ## Run the code
@@ -28,7 +28,7 @@ pip install openai
 
 2) Set your API key
 
-Edit `core.py` and replace `your_key_here`, or remove that line and set:
+Set the environment variable before running (PowerShell):
 
 ```powershell
 $env:OPENAI_API_KEY="sk-..."
@@ -43,3 +43,10 @@ python core.py
 ## Files
 
 - `core.py`: core roles and Reflexion loop
+
+## Offline checks
+
+```bash
+python -m pip install pytest openai
+python -m pytest test_judge.py -q
+```

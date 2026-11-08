@@ -2,18 +2,9 @@
 
 An inspired implementation of [Self-RAG](https://arxiv.org/abs/2310.11511) using off-the-shelf LLM APIs.
 
-## Paper Methodology
-
-This implementation follows **Algorithm 1** and **Appendix A.3** as closely as possible:
-
-
-# Self-RAG: Retrieve + Generate + Critique (Self-Reflection)
-
-An implementation inspired by the paper **Self-RAG (Learning to Retrieve, Generate, and Critique through Self-Reflection)** using off-the-shelf LLM APIs.
-
 ## Paper methodology (in plain English)
 
-Self-RAG is just **RAG with a loop**:
+The inference loop combines retrieval with segment-level self-critique:
 
 * The model **decides whether retrieval is needed**
 * If it retrieves, it generates **one candidate next sentence per retrieved chunk**
@@ -45,18 +36,18 @@ The model outputs:
 ### 2) If `Retrieve = yes`
 
 1. Retrieve **top-K chunks** (normal RAG retrieval): `D = {d1…dK}`
-2. For each chunk `di` (batched/parallel):
+2. For each chunk `di` (evaluated sequentially):
    
    * Generate **one candidate next sentence** `y_i` using:
      **(prompt + answer-so-far + this chunk)**
-    (think of this like different LLMs in parallel, each LLM get one chunk as context so k different outputs (segments)) (whereas in vanilla RAG all chunks go as context in one LLM)
+    Each call sees one passage; ordinary RAG typically places several passages in a single prompt.
 
    * Also output critique labels for that candidate:
      * `ISREL`: relevant / irrelevant
      * `ISSUP`: fully supported / partially supported / no support
      * `ISUSE`: 1–5 usefulness
      * `is_final`: whether the answer is complete after this sentence or more generation is needed
-3. **Score** all candidate generations (all k distinct segments generated in parallel) and pick the best one
+3. **Score** all candidate generations (the candidate segments) and pick the best one
 4. Append the **winning sentence(generated segment)** to the answer `y`
 
 ✅ Important: we append the **winning sentence (segment)** after every loop so the context for LLM grows after every loop
@@ -79,11 +70,9 @@ The model outputs:
 
 ## Candidate scoring (“critic score”)
 
-For each candidate sentence:
-
-* Score ≈ **language-model quality** (how good the sentence is)
-
-  * **weighted critique score**
+Each candidate receives a weighted sum of discrete relevance, support, and
+usefulness labels. These are prompted judgments, not trained reflection-token
+probabilities or a language-model likelihood score.
 
 Critique prefers:
 
@@ -109,3 +98,22 @@ Instead of picking only 1 best candidate each step (what we saw earlier-**greedy
 ---
 
 
+
+## Run
+
+From this folder, using Python 3.12:
+
+```bash
+pip install -r requirements.txt
+python main.py ingest --docs kb --out faiss_index
+python main.py ask --index faiss_index "What are the security requirements?"
+python -m unittest discover -s tests -v
+```
+
+Set `OPENAI_API_KEY` before ingestion or answering. Offline tests need only
+`openai` and `pydantic`; they use synthetic passages and make no API calls.
+
+This adaptation uses API-generated critique labels and sequential passage calls.
+Beam ranking uses mean segment score to avoid automatically rewarding longer
+answers. If every passage is rejected, both decoding modes request a no-context
+fallback. Rebuild the index when the documents or embedding settings change.

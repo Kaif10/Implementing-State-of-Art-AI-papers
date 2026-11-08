@@ -1,6 +1,8 @@
 # ircot_end2end.py
 # pip install openai llama-index llama-index-retrievers-bm25
 
+from __future__ import annotations
+
 import os, re, json, random, argparse
 import warnings
 from statistics import mean
@@ -11,9 +13,11 @@ from typing import Dict, List, Iterable, Tuple
 warnings.filterwarnings("ignore", message=".*resource module.*", category=ImportWarning)
 
 from openai import OpenAI
-from llama_index.core import SimpleDirectoryReader
-from llama_index.core.node_parser import SentenceSplitter
-from llama_index.retrievers.bm25 import BM25Retriever
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from llama_index.retrievers.bm25 import BM25Retriever
+
 
 SENT_END = re.compile(r"[.?!]\s")
 
@@ -49,9 +53,17 @@ def build_retriever(
     chunk_size: int = 512,
     chunk_overlap: int = 20,
 ) -> BM25Retriever:
+    from llama_index.core import SimpleDirectoryReader
+    from llama_index.core.node_parser import SentenceSplitter
+    from llama_index.retrievers.bm25 import BM25Retriever
+
+    if top_k < 1:
+        raise ValueError("top_k must be positive")
     docs = SimpleDirectoryReader(data_dir, recursive=True).load_data()
     nodes = SentenceSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap).get_nodes_from_documents(docs)
-    return BM25Retriever.from_defaults(nodes=nodes, similarity_top_k=top_k)
+    if not nodes:
+        raise ValueError("No document chunks found")
+    return BM25Retriever.from_defaults(nodes=nodes, similarity_top_k=min(top_k, len(nodes)))
 
 
 # ---------------- Prompt formatting (paper template) ----------------
@@ -115,7 +127,10 @@ def ircot_answer(
     max_ctx_chars: int = 12000,
 ) -> str:
     # set per-step retrieval size
-    retriever.similarity_top_k = K
+    if K < 1:
+        raise ValueError("K must be positive")
+    # Keep the cap established when building a small demonstration corpus.
+    retriever.similarity_top_k = min(K, retriever.similarity_top_k)
 
     demo_block = "\n".join(fmt_demo(d) for d in demos)
 
@@ -224,6 +239,21 @@ def em(pred: str, gold: str) -> int:
     return int(norm(pred) == norm(gold))
 
 
+def validate_eval_split(dev: List[dict], demos: List[dict]) -> None:
+    """Reject duplicate questions, including case/punctuation variations.
+
+    This is an exact normalized overlap check, not a semantic leakage detector.
+    """
+    if not dev:
+        raise ValueError("Development set must not be empty")
+    questions = [norm(row["question"]) for row in dev]
+    if any(not q for q in questions) or len(set(questions)) != len(questions):
+        raise ValueError("Development questions must be nonempty and unique")
+    overlap = set(questions) & {norm(row["question"]) for row in demos}
+    if overlap:
+        raise ValueError("Evaluation/demo question overlap: " + "; ".join(sorted(overlap)))
+
+
 def tune_km(
     data_dir: str,
     dev_jsonl: str,
@@ -231,12 +261,22 @@ def tune_km(
     model: str,
     max_examples: int,
 ) -> None:
-    dev = read_jsonl(dev_jsonl)
-    client = OpenAI()
+    if max_examples < 1:
+        raise ValueError("max_examples must be positive")
+    dev = read_jsonl(dev_jsonl)[:max_examples]
 
     Ks = [2, 4, 6, 8]
     Ms = [1, 2, 3]
     seeds = [0, 1, 2]  # paper: average over 3 demo sets
+
+    # Check all splits before initializing a client or making any API calls.
+    demo_sets = {}
+    for M in Ms:
+        for seed in seeds:
+            demos = load_json(os.path.join(demos_dir, f"demos_M{M}_seed{seed}.json"))
+            validate_eval_split(dev, demos)
+            demo_sets[M, seed] = demos
+    client = OpenAI()
 
     best = (-1.0, None)
 
@@ -245,7 +285,7 @@ def tune_km(
         for M in Ms:
             scores = []
             for seed in seeds:
-                demos = load_json(os.path.join(demos_dir, f"demos_M{M}_seed{seed}.json"))
+                demos = demo_sets[M, seed]
 
                 hits, n = 0, 0
                 for ex in dev[:max_examples]:

@@ -14,7 +14,7 @@ def split_sentences(text: str) -> List[str]:
     return sents if sents else [text]
 
 
-def chunk_text(x: str, q: str, k: int, worker_instruction_template: str, enc) -> List[str]:
+def chunk_text(x: str, q: str, k: int, worker_instruction_template: str, enc, *, prev_cu_token_buffer: int = 0) -> List[str]:
     """Algorithm 2 (paper): greedy sentence chunking under token budget.
 
     Paper pseudocode uses a static budget:
@@ -25,7 +25,8 @@ def chunk_text(x: str, q: str, k: int, worker_instruction_template: str, enc) ->
     reserve a fixed safety buffer for `prev_cu` tokens when computing B.
     """
     sentences = split_sentences(x)
-    prev_cu_token_buffer = getattr(chunk_text, "prev_cu_token_buffer", 0)  # backward compat if monkeypatched
+    if prev_cu_token_buffer < 0:
+        raise ValueError("prev_cu_token_buffer must be nonnegative")
     # Note: buffer is applied outside the paper pseudocode to reserve room for growing prev_cu.
     B = (
         k
@@ -41,12 +42,27 @@ def chunk_text(x: str, q: str, k: int, worker_instruction_template: str, enc) ->
 
     chunks: List[str] = []
     cur = ""
-    for s in sentences:
-        if count_tokens(cur, enc) + count_tokens(s, enc) > B:
+    for sentence in sentences:
+        # Split oversized sentences on character boundaries to preserve Unicode.
+        remaining = sentence
+        while count_tokens(remaining, enc) > B:
             if cur:
                 chunks.append(cur)
-            cur = ""
-        cur = (cur + " " + s).strip() if cur else s
+                cur = ""
+            end = len(remaining)
+            while end and count_tokens(remaining[:end], enc) > B:
+                end //= 2
+            if not end:
+                raise ValueError("Token budget cannot hold one Unicode character")
+            chunks.append(remaining[:end])
+            remaining = remaining[end:]
+        candidate = (cur + " " + remaining).strip() if cur else remaining
+        if count_tokens(candidate, enc) > B:
+            if cur:
+                chunks.append(cur)
+            cur = remaining
+        else:
+            cur = candidate
     if cur:
         chunks.append(cur)
     return chunks

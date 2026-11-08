@@ -1,23 +1,58 @@
 """
 FLARE: Forward-Looking Active REtrieval-Augmented Generation
 
-Faithful implementation of the FLARE paper (https://arxiv.org/abs/2305.06983).
+API-based implementation of the FLARE retrieval loop (https://arxiv.org/abs/2305.06983).
 
 FLARE generates a temporary next sentence, checks confidence, and retrieves 
 BEFORE finalizing (forward-looking), not after generation.
 """
 
+from __future__ import annotations
+
 import os
 import re
 import json
 import argparse
+import math
 from typing import List, Tuple, Optional, Dict
 from dataclasses import dataclass
 
-from openai import OpenAI
-from llama_index.core import SimpleDirectoryReader
-from llama_index.core.node_parser import SentenceSplitter
-from llama_index.retrievers.bm25 import BM25Retriever
+from openai import OpenAI, BadRequestError
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from llama_index.retrievers.bm25 import BM25Retriever
+
+
+
+def sentence_confidence(text, token_probs, beta):
+    """Return first sentence, its minimum probability, and a filtered query.
+
+    Byte offsets keep API tokens aligned even when a Unicode character spans
+    tokens. Misaligned or missing probabilities trigger conservative retrieval.
+    """
+    boundary = re.search(r'(?<=[.!?])\s+', text)
+    end = boundary.start() if boundary else len(text)
+    sentence = text[:end].strip()
+    if not sentence:
+        return "", None, ""
+    if not token_probs:
+        return sentence, None, sentence
+    raw = text.encode("utf-8")
+    if b"".join(piece for piece, _ in token_probs) != raw:
+        return sentence, None, sentence
+    limit = len(text[:end].encode("utf-8"))
+    offset, probs, query = 0, [], []
+    for piece, prob in token_probs:
+        if offset >= limit:
+            break
+        selected = piece[:limit - offset]
+        if selected.strip():
+            probs.append(prob)
+        query.append(selected if prob >= beta else b" ")
+        offset += len(piece)
+    filtered = b"".join(query).decode("utf-8", errors="ignore")
+    return sentence, min(probs) if probs else None, " ".join(filtered.split())
 
 
 class FLARE:
@@ -64,12 +99,12 @@ class FLARE:
         max_tokens: int = 100,
         temperature: Optional[float] = None,
         get_logprobs: bool = False,
-    ) -> Tuple[str, Optional[float]]:
+    ) -> Tuple[str, Optional[List[Tuple[bytes, float]]]]:
         """
-        Call LLM and return response with optional minimum probability.
+        Call LLM and retain token bytes and probabilities for sentence alignment.
         
         Returns:
-            (response_text, min_probability or None)
+            (response_text, token_probabilities or None)
         """
         temp = temperature if temperature is not None else self.temperature
         
@@ -85,8 +120,7 @@ class FLARE:
             )
             response_text = r.choices[0].message.content or ""
             
-            # Extract minimum probability if logprobs are available
-            min_prob = None
+            token_probs = None
             if get_logprobs and hasattr(r.choices[0], 'logprobs') and r.choices[0].logprobs:
                 try:
                     logprobs_content = r.choices[0].logprobs.content
@@ -95,17 +129,20 @@ class FLARE:
                         probs = []
                         for token_data in logprobs_content:
                             if hasattr(token_data, 'logprob') and token_data.logprob is not None:
-                                import math
-                                probs.append(math.exp(token_data.logprob))
+                                raw = getattr(token_data, "bytes", None)
+                                piece = bytes(raw) if raw is not None else token_data.token.encode("utf-8")
+                                probs.append((piece, math.exp(token_data.logprob)))
                         if probs:
-                            min_prob = min(probs)
-                except:
-                    pass
+                            token_probs = probs
+                except (AttributeError, TypeError, ValueError, OverflowError):
+                    token_probs = None
             
-            return response_text.strip(), min_prob
+            return response_text, token_probs
             
-        except Exception as e:
-            # Fallback without logprobs
+        except BadRequestError as e:
+            # Retry only an unsupported logprob request, not auth/rate/server errors.
+            if not get_logprobs or "logprob" not in str(e).lower():
+                raise
             try:
                 r = self.client.chat.completions.create(
                     model=self.model,
@@ -114,8 +151,8 @@ class FLARE:
                     max_tokens=max_tokens,
                 )
                 response_text = r.choices[0].message.content or ""
-                return response_text.strip(), None
-            except:
+                return response_text, None
+            except Exception:
                 raise e
     
     def _retrieve_documents(self, query: str) -> List[str]:
@@ -155,7 +192,7 @@ class FLARE:
         initial_context: Optional[str] = None,
     ) -> str:
         """
-        Generate answer using FLARE algorithm (faithful to paper).
+        Generate an answer with forward-looking, sentence-level retrieval.
         
         Algorithm:
         1. Generate temporary next sentence (forward-looking)
@@ -199,7 +236,7 @@ Answer:"""
                 current_prompt += " " + final_answer
             
             # Step 1: Generate temporary next sentence (FORWARD-LOOKING)
-            temp_sentence, min_prob = self._call_llm(
+            temp_sentence, token_probs = self._call_llm(
                 current_prompt,
                 max_tokens=50,
                 get_logprobs=True,
@@ -208,44 +245,19 @@ Answer:"""
             if not temp_sentence:
                 break
             
-            # Extract just the next sentence (not full response)
-            sentences = re.split(r'[.!?]\s+', temp_sentence)
-            next_sentence = sentences[0] if sentences else temp_sentence
-            if next_sentence and not next_sentence.endswith(('.', '!', '?')):
-                next_sentence += '.'
-            
-            # Step 2: Check confidence - if low or no logprobs available, retrieve
-            should_retrieve = False
-            low_conf_mask = None
-
-            if min_prob is None:
-                # No logprobs available - use sentence mask threshold heuristic (beta)
-                uncertain_words = ['approximately', 'about', 'roughly', 'around', 'maybe', 'perhaps', 'possibly', 'some', 'certain', 'various', 'many', 'unknown', 'unclear', 'uncertain']
-                tokens = re.findall(r'\b\w+\b', next_sentence)
-                lower_tokens = [t.lower() for t in tokens]
-                uncertain_flags = [t in uncertain_words for t in lower_tokens]
-                uncertain_ratio = (sum(uncertain_flags) / len(tokens)) if tokens else 0.0
-
-                if uncertain_ratio >= self.beta:
-                    should_retrieve = True
-                    # mask uncertain tokens for query (implicit masking)
-                    masked_tokens = [("[MASK]" if flag else tok) for tok, flag in zip(tokens, uncertain_flags)]
-                    low_conf_mask = " ".join(masked_tokens)
-            else:
-                # Have logprobs: if any token prob < theta -> retrieve
-                if min_prob < self.theta:
-                    should_retrieve = True
-                # Note: per-token masking requires token-level probs; we only have min_prob aggregated
-                low_conf_mask = None
-            
-            # Step 3 & 4: If uncertain, retrieve and regenerate
+            next_sentence, min_prob, filtered_query = sentence_confidence(
+                temp_sentence, token_probs, self.beta
+            )
+            if not next_sentence:
+                break
+            # Without aligned logprobs, retrieve conservatively rather than guess
+            # confidence from hedging words.
+            should_retrieve = min_prob is None or min_prob < self.theta
             if should_retrieve:
-                # FLARE-direct implicit: mask low-confidence tokens if available, else use sentence
-                if low_conf_mask:
-                    query = low_conf_mask
-                else:
-                    query = next_sentence.replace('.', '').replace('!', '').replace('?', '').strip()
-                
+                query = filtered_query if min_prob is not None else next_sentence
+                # All tokens may be uncertain; the question is a safer fallback.
+                if not re.search(r"\w", query):
+                    query = question
                 retrieved_docs = self._retrieve_documents(query)
                 if retrieved_docs:
                     retrieved_context = self._format_context(retrieved_docs, max_chars=2000)
@@ -293,8 +305,16 @@ def build_retriever(
     chunk_overlap: int = 20,
 ) -> BM25Retriever:
     """Build BM25 retriever from data directory"""
+    from llama_index.core import SimpleDirectoryReader
+    from llama_index.core.node_parser import SentenceSplitter
+    from llama_index.retrievers.bm25 import BM25Retriever
+
+    if top_k < 1:
+        raise ValueError("top_k must be positive")
     docs = SimpleDirectoryReader(data_dir, recursive=True).load_data()
     nodes = SentenceSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap).get_nodes_from_documents(docs)
+    if not nodes:
+        raise ValueError("No document chunks found")
     # Ensure top_k doesn't exceed number of nodes
     actual_top_k = min(top_k, len(nodes))
     if actual_top_k < top_k:

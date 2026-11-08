@@ -1,0 +1,5 @@
+openai>=1.68
+pydantic>=2
+numpy>=1.26
+faiss-cpu>=1.8
+pypdf>=4

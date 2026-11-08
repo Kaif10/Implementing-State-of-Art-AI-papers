@@ -1,5 +1,5 @@
-{"question": "What city was Albert Einstein born in?", "answer": "Ulm"}
-{"question": "What year did Einstein receive the Nobel Prize in Physics?", "answer": "1921"}
-{"question": "What is Einstein's most famous equation?", "answer": "E = mc²"}
-{"question": "What theory did Einstein develop that explains gravitation?", "answer": "general relativity"}
-{"question": "For what discovery did Einstein win the Nobel Prize?", "answer": "photoelectric effect"}
+{"question": "Which river runs through the birthplace of the physicist who developed general relativity?", "answer": "Danube", "supporting_documents": ["wikipedia_relativity.txt", "wikipedia_ulm.txt"]}
+{"question": "Which institution awards the prize received by the physicist born in Ulm in 1879?", "answer": "Royal Swedish Academy of Sciences", "supporting_documents": ["wikipedia_albert_einstein.txt", "wikipedia_nobel_prize.txt"]}
+{"question": "What did the first recipient of the physics prize later awarded to the developer of relativity discover?", "answer": "X-rays", "supporting_documents": ["wikipedia_albert_einstein.txt", "wikipedia_nobel_prize.txt"]}
+{"question": "What is the name of the famous church in the birthplace of the scientist whose photoelectric-effect explanation contributed to quantum mechanics?", "answer": "Ulm Minster", "supporting_documents": ["wikipedia_quantum_mechanics.txt", "wikipedia_ulm.txt"]}
+{"question": "Whose older theory of mechanics was superseded by the theory developed by the 1921 Nobel Physics laureate?", "answer": "Isaac Newton", "supporting_documents": ["wikipedia_nobel_prize.txt", "wikipedia_relativity.txt"]}

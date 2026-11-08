@@ -14,10 +14,14 @@ speculative decoding (their Eq. for the "expected improvement factor"):
 
 This script, on a *modern* open LLM (Qwen2.5), measures alpha and the wall-clock
 speedup across a sweep of K, independently measures c, and checks the measured
-speedup against the formula. Agreement = our implementation reproduces the
-paper's model. It also prints the regime where the same formula predicts the
-paper's headline 2-3x (large target => c -> 0).
+speedup against the formula. The estimate is idealized; agreement or disagreement must be interpreted with
+its assumptions. Our cached implementation uses K+1 draft forwards per round,
+so the displayed estimate accounts for that extra cache update.
 """
+
+import json
+import statistics
+from pathlib import Path
 
 import argparse
 import sys
@@ -31,7 +35,8 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from speculative_decoding import (autoregressive_generate_cached,
-                                  speculative_generate_cached)
+                                  speculative_generate_cached, _prime)
+from benchmark import synchronize, timed, validate_tokenizers
 
 
 def pick_device():
@@ -42,26 +47,29 @@ def pick_device():
     return "cpu"
 
 
-def predicted_speedup(K, alpha, c):
-    return (1 - alpha ** (K + 1)) / ((1 - alpha) * (c * K + 1))
+def predicted_speedup(K, alpha, c, extra_draft_steps=0):
+    """Idealized estimate; optionally account for our extra draft cache update."""
+    if K < 1 or not 0 <= alpha <= 1 or c < 0:
+        raise ValueError("expected K >= 1, alpha in [0, 1], c >= 0")
+    # Geometric sum also handles perfect acceptance without 0/0.
+    return sum(alpha ** i for i in range(K + 1)) / (c * (K + extra_draft_steps) + 1)
 
 
 def measure_cost_ratio(target, draft, input_ids, reps=20):
-    """Wall-clock cost of one draft forward vs one target forward (c)."""
+    """Median single-token decode latency at the prompt length; prefill excluded."""
     def time_fwd(model):
+        durations = []
         with torch.no_grad():
-            for _ in range(3):                       # warm up
-                model(input_ids, use_cache=True)
-            if input_ids.device.type == "mps":
-                torch.mps.synchronize()
-            t = time.perf_counter()
-            for _ in range(reps):
-                model(input_ids, use_cache=True)
-            if input_ids.device.type == "mps":
-                torch.mps.synchronize()
-            return (time.perf_counter() - t) / reps
-    t_target = time_fwd(target)
-    t_draft = time_fwd(draft)
+            for i in range(reps + 3):
+                cache, anchor = _prime(model, input_ids)
+                _, elapsed = timed(
+                    lambda: model(anchor, past_key_values=cache, use_cache=True),
+                    input_ids.device,
+                )
+                if i >= 3:
+                    durations.append(elapsed)
+        return statistics.median(durations)
+    t_target, t_draft = time_fwd(target), time_fwd(draft)
     return t_draft / t_target, t_draft, t_target
 
 
@@ -74,7 +82,12 @@ def main():
     ap.add_argument("--temperature", type=float, default=0.7)
     ap.add_argument("--Ks", type=int, nargs="+", default=[1, 2, 3, 4, 5, 6, 8])
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--repeats", type=int, default=3)
+    ap.add_argument("--output", default="experiment_results.json",
+                    help="Save configuration and individual timings for audit")
     args = ap.parse_args()
+    if args.repeats < 1 or args.max_new_tokens < 1 or any(k < 1 for k in args.Ks):
+        ap.error("repeats, max-new-tokens and Ks must be positive")
 
     device = pick_device()
     dtype = torch.float16 if device in ("mps", "cuda") else torch.float32
@@ -82,6 +95,7 @@ def main():
     print(f"target: {args.target}   draft: {args.draft}\n")
 
     tok = AutoTokenizer.from_pretrained(args.target)
+    validate_tokenizers(tok, AutoTokenizer.from_pretrained(args.draft))
     target = AutoModelForCausalLM.from_pretrained(args.target, dtype=dtype).to(device).eval()
     draft = AutoModelForCausalLM.from_pretrained(args.draft, dtype=dtype).to(device).eval()
     ids = tok(args.prompt, return_tensors="pt").input_ids.to(device)
@@ -92,43 +106,43 @@ def main():
     print(f"per-forward latency  draft={td*1e3:.1f} ms  target={tt*1e3:.1f} ms"
           f"  ->  c = {c:.3f}\n")
 
-    # --- baseline (cached autoregressive), once --------------------------- #
-    def sync():
-        if device == "mps":
-            torch.mps.synchronize()
-    torch.manual_seed(args.seed)
-    autoregressive_generate_cached(target, ids, 4, temperature=args.temperature)  # warm
-    sync(); t0 = time.perf_counter()
-    autoregressive_generate_cached(target, ids, n, temperature=args.temperature)
-    sync(); base_t = time.perf_counter() - t0
-    print(f"baseline (autoregressive): {base_t:.2f}s   {n/base_t:.2f} tok/s\n")
+    # Warm up each path, then retain every synchronized timing.
+    def measure(fn):
+        fn()
+        runs = []
+        for repeat in range(args.repeats):
+            torch.manual_seed(args.seed + repeat)
+            (_, stats), seconds = timed(fn, device)
+            runs.append({"seconds": seconds, **stats})
+        return runs
 
-    # --- sweep K ---------------------------------------------------------- #
-    print(f"{'K':>3}{'accept α':>11}{'tgt fwd':>9}{'tok/s':>9}"
-          f"{'speedup':>9}{'predicted':>11}")
-    print("-" * 52)
+    baseline = measure(lambda: autoregressive_generate_cached(
+        target, ids, n, temperature=args.temperature))
+    base_t = statistics.median(r["seconds"] for r in baseline)
+    results = []
+    print(f"baseline median: {base_t:.2f}s ({n / base_t:.2f} tok/s)")
+    print("K  acceptance  speedup  idealized(K+1 draft forwards)")
     for K in args.Ks:
-        torch.manual_seed(args.seed)
-        speculative_generate_cached(target, draft, ids, 4, K=K, temperature=args.temperature)  # warm
-        sync(); t0 = time.perf_counter()
-        _, st = speculative_generate_cached(target, draft, ids, n, K=K,
-                                            temperature=args.temperature)
-        sync(); spec_t = time.perf_counter() - t0
-        alpha = st["acceptance_rate"]
-        speedup = base_t / spec_t
-        pred = predicted_speedup(K, alpha, c)
-        print(f"{K:>3}{alpha*100:>10.1f}%{st['target_forwards']:>9}"
-              f"{n/spec_t:>9.2f}{speedup:>8.2f}x{pred:>10.2f}x")
+        runs = measure(lambda: speculative_generate_cached(
+            target, draft, ids, n, K=K, temperature=args.temperature))
+        spec_t = statistics.median(r["seconds"] for r in runs)
+        alpha = statistics.mean(r["acceptance_rate"] for r in runs)
+        estimate = predicted_speedup(K, alpha, c, extra_draft_steps=1)
+        row = {"K": K, "runs": runs, "median_seconds": spec_t,
+               "acceptance_rate": alpha, "speedup": base_t / spec_t,
+               "idealized_speedup": estimate}
+        results.append(row)
+        print(f"{K:2d} {alpha:10.3f} {base_t / spec_t:8.2f}x {estimate:12.2f}x")
 
-    # --- what the SAME formula predicts in the paper's GPU/TPU regime ----- #
-    print("\nSame formula, paper regime (large target so draft is ~free, c -> 0):")
-    print(f"{'K':>3}{'predicted speedup @ α=0.75':>30}")
-    for K in [3, 5, 8]:
-        print(f"{K:>3}{predicted_speedup(K, 0.75, 0.02):>29.2f}x")
-    print("\n=> On this machine, c is large (per-kernel overhead dominates a tiny draft),")
-    print("   so wall-clock speedup is modest BUT matches the paper's formula. The")
-    print("   acceptance rate and the formula are exactly the paper's; only the")
-    print("   hardware regime differs from their 2-3x.")
+    report = {"config": vars(args), "device": device, "dtype": str(dtype),
+              "torch_version": torch.__version__, "cost_ratio": c,
+              "draft_decode_seconds": td, "target_decode_seconds": tt,
+              "baseline": baseline, "results": results}
+    Path(args.output).write_text(json.dumps(report, indent=2), encoding="utf-8")
+    print(f"Raw timings saved to {args.output}")
+    print("The estimate assumes constant acceptance and target verification cost.")
+    print("Prefill, K-dependent verification, sampling and Python overhead can cause gaps.")
+    print("These measurements alone do not identify which overhead dominates.")
 
 
 if __name__ == "__main__":

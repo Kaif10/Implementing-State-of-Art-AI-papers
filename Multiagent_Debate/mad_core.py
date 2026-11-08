@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from collections import Counter
+from fractions import Fraction
 from typing import Callable, Dict, List, Optional, Literal, Tuple, Any
 
 from openai import OpenAI
@@ -109,7 +110,15 @@ def prompt_chess_debate(other: str) -> str:
 _BOXED_RE = re.compile(r"\\boxed\{([^}]+)\}")
 _MMLU_RE = re.compile(r"\(([A-D])\)", re.IGNORECASE)
 _SQUARE_RE = re.compile(r"\(([a-h][1-8])\)", re.IGNORECASE)  # used in chess validity tasks (not move prediction)
-_NUM_RE = re.compile(r"-?\d+(?:\.\d+)?")
+_NUM_RE = re.compile(r"[+-]?(?:(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?")
+
+
+def _normalize_number(text: str) -> str:
+    try:
+        return str(Fraction(text.replace(",", "").strip()))
+    except (ValueError, ZeroDivisionError):
+        return text.strip()
+
 
 def parse_final(task: TaskName, text: str) -> Optional[str]:
     t = (text or "").strip()
@@ -117,9 +126,9 @@ def parse_final(task: TaskName, text: str) -> Optional[str]:
     if task == "gsm8k":
         m = _BOXED_RE.findall(t)
         if m:
-            return m[-1].strip()
+            return _normalize_number(m[-1])
         nums = _NUM_RE.findall(t)
-        return nums[-1].strip() if nums else None
+        return _normalize_number(nums[-1]) if nums else None
 
     if task == "mmlu":
         m = _MMLU_RE.findall(t)
@@ -127,7 +136,7 @@ def parse_final(task: TaskName, text: str) -> Optional[str]:
 
     if task == "arithmetic":
         nums = _NUM_RE.findall(t)
-        return nums[-1].strip() if nums else None
+        return _normalize_number(nums[-1]) if nums else None
 
     if task == "chess":
         # very light parsing: take last line and strip
@@ -140,8 +149,7 @@ def parse_final(task: TaskName, text: str) -> Optional[str]:
 
 
 def all_agree(parsed: List[Optional[str]]) -> bool:
-    vals = [p for p in parsed if p is not None]
-    return len(vals) > 0 and len(set(vals)) == 1
+    return bool(parsed) and None not in parsed and len(set(parsed)) == 1
 
 
 def majority_vote(parsed: List[Optional[str]]) -> Optional[str]:
@@ -275,6 +283,10 @@ def run_debate(
     cfg: DebateConfig,
     client: Optional[OpenAI] = None,
 ) -> DebateResult:
+    if cfg.agents < 1 or cfg.rounds < 1 or cfg.max_tokens < 1:
+        raise ValueError("agents, rounds, and max_tokens must be positive")
+    if cfg.other_mode not in {"concat", "summarize"}:
+        raise ValueError("other_mode must be concat or summarize")
     client = client or OpenAI()
     spec = get_task(task)
 

@@ -12,11 +12,14 @@ target model's distribution. Two empirical checks:
    model's true distribution (compared by total variation distance).
 """
 
+import math
+
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from speculative_decoding import (autoregressive_generate, logits_to_probs,
-                                  speculative_generate)
+                                  speculative_generate, speculative_generate_cached,
+                                  autoregressive_generate_cached)
 
 DRAFT, TARGET = "distilgpt2", "gpt2"   # small + fast; fine for a correctness test
 PROMPT = "The capital of France is"
@@ -31,7 +34,11 @@ def main():
 
     # --- Test 1: greedy decoding must be identical -------------------------- #
     base, _ = autoregressive_generate(target, ids, 20, temperature=0.0)
-    spec, _ = speculative_generate(target, draft, ids, 20, K=4, temperature=0.0)
+    cached_base, _ = autoregressive_generate_cached(target, ids, 20, temperature=0.0)
+    assert torch.equal(base, cached_base), "cached baseline differs from reference"
+    for generate in (speculative_generate, speculative_generate_cached):
+        spec, _ = generate(target, draft, ids, 20, K=4, temperature=0.0)
+        assert torch.equal(base, spec), f"{generate.__name__} differs from reference"
     identical = torch.equal(base, spec)
     print(f"[greedy] identical to target argmax decoding: {identical}")
     print(f"  target: {tok.decode(base[0], skip_special_tokens=True)!r}")
@@ -68,8 +75,12 @@ def main():
     print(f"  speculative decoding : {tv_spec:.4f}   <- should match the yardstick")
     print(f"  direct target sample : {tv_direct:.4f}   <- sampling-noise yardstick")
     print(f"  draft model          : {tv_draft:.4f}   <- a DIFFERENT distribution")
-    print("  => speculative ~= direct (lossless), and both << draft (test is discriminative)")
-    assert tv_spec < tv_draft, "speculative distribution looks like the draft, not the target!"
+    # Bounded-difference concentration: each TV statistic changes by at most
+    # 1/N when one sample changes. Under the null, both have equal expectation.
+    # A union bound gives this conservative two-sided comparison tolerance.
+    tolerance = 2 * math.sqrt(math.log(4 / 0.01) / (2 * N))
+    assert abs(tv_spec - tv_direct) <= tolerance, "TV differs beyond sampling tolerance"
+    print(f"  TV yardstick agreement within tolerance {tolerance:.4f}")
 
 
 if __name__ == "__main__":

@@ -25,6 +25,8 @@ parallel target scoring, the accept/reject rule, the residual (p - q)+
 resampling on rejection, and the bonus token when all K are accepted.
 """
 
+import math
+
 import torch
 import torch.nn.functional as F
 from transformers import DynamicCache
@@ -40,7 +42,13 @@ def logits_to_probs(logits, temperature, top_k=0):
     q(x) and the target model's p(x) are directly comparable in the acceptance
     test. temperature == 0 is treated as greedy (a one-hot at the argmax).
     """
-    if temperature <= 0:
+    if not math.isfinite(temperature) or temperature < 0:
+        raise ValueError("temperature must be finite and nonnegative")
+    if not isinstance(top_k, int) or not 0 <= top_k <= logits.shape[-1]:
+        raise ValueError("top_k must be between zero and vocabulary size")
+    # Keep probability arithmetic in fp32 even with fp16/bfloat16 model weights.
+    logits = logits.float()
+    if temperature == 0:
         probs = torch.zeros_like(logits)
         probs.scatter_(-1, logits.argmax(-1, keepdim=True), 1.0)
         return probs
@@ -56,6 +64,15 @@ def sample(probs):
     return torch.multinomial(probs, num_samples=1)
 
 
+
+def _validate_inputs(input_ids, max_new_tokens, K=None):
+    if input_ids.ndim != 2 or input_ids.shape[0] != 1 or input_ids.shape[1] == 0:
+        raise ValueError("input_ids must contain one nonempty prompt (batch size 1)")
+    if not isinstance(max_new_tokens, int) or max_new_tokens < 0:
+        raise ValueError("max_new_tokens must be a nonnegative integer")
+    if K is not None and (not isinstance(K, int) or K < 1):
+        raise ValueError("K must be a positive integer")
+
 # --------------------------------------------------------------------------- #
 # Baseline: ordinary autoregressive sampling from the target model alone      #
 # --------------------------------------------------------------------------- #
@@ -66,6 +83,7 @@ def autoregressive_generate(model, input_ids, max_new_tokens,
 
     Returns (output_ids, stats). Used as the correctness/latency reference.
     """
+    _validate_inputs(input_ids, max_new_tokens)
     for _ in range(max_new_tokens):
         logits = model(input_ids).logits[:, -1, :]
         probs = logits_to_probs(logits, temperature, top_k)
@@ -91,6 +109,7 @@ def speculative_generate(target_model, draft_model, input_ids, max_new_tokens,
     Returns (output_ids, stats) where stats reports acceptance rate and the
     number of target forward passes — the basis for the measured speedup.
     """
+    _validate_inputs(input_ids, max_new_tokens, K)
     prompt_len = input_ids.shape[1]
     proposed_total = 0          # draft tokens scored by the target
     accepted_total = 0          # of those, how many were accepted
@@ -167,14 +186,9 @@ def speculative_generate(target_model, draft_model, input_ids, max_new_tokens,
 # --------------------------------------------------------------------------- #
 # KV-cached variants                                                          #
 # --------------------------------------------------------------------------- #
-# The functions above recompute the whole sequence on every forward pass, which
-# is O(n^2) and makes the small draft model deceptively expensive. Real serving
-# uses the model's built-in KV cache (use_cache=True / past_key_values): each
-# step only attends over cached keys/values, so a forward is O(1) in the
-# sequence length. These cached variants are what reproduce the paper's
-# wall-clock speedups. The ONLY speculative-specific bookkeeping is cropping the
-# cache back when drafted tokens are rejected (the cache machinery itself lives
-# inside the model).
+# The reference recomputes the full prefix. KV caching avoids recomputing past
+# keys/values, but dense attention still reads a history that grows with sequence
+# length. Cropping discards rejected speculative state before the next round.
 
 def _prime(model, prompt_ids):
     """Fill a fresh KV cache with prompt[:-1] and return (cache, anchor).
@@ -185,7 +199,7 @@ def _prime(model, prompt_ids):
     """
     cache = DynamicCache()
     if prompt_ids.shape[1] > 1:
-        model(prompt_ids[:, :-1], past_key_values=cache, use_cache=True)
+        cache = model(prompt_ids[:, :-1], past_key_values=cache, use_cache=True).past_key_values
     return cache, prompt_ids[:, -1:]
 
 
@@ -193,6 +207,9 @@ def _prime(model, prompt_ids):
 def autoregressive_generate_cached(model, input_ids, max_new_tokens,
                                    temperature=1.0, top_k=0):
     """KV-cached autoregressive baseline: one cheap forward per token."""
+    _validate_inputs(input_ids, max_new_tokens)
+    if max_new_tokens == 0:
+        return input_ids, {"target_forwards": 0}
     cache, anchor = _prime(model, input_ids)
     generated = input_ids
     for _ in range(max_new_tokens):
@@ -214,10 +231,14 @@ def speculative_generate_cached(target_model, draft_model, input_ids,
     caches are cropped back to the committed length so no rejected key/value
     state lingers.
     """
+    _validate_inputs(input_ids, max_new_tokens, K)
     prompt_len = input_ids.shape[1]
     committed_len = prompt_len               # tokens decided so far
     proposed_total = accepted_total = target_forwards = 0
 
+    if max_new_tokens == 0:
+        return input_ids, {"proposed": 0, "accepted": 0, "acceptance_rate": 0.0,
+                           "target_forwards": 0, "K": K}
     t_cache, anchor = _prime(target_model, input_ids)
     d_cache, _ = _prime(draft_model, input_ids)
     generated = input_ids

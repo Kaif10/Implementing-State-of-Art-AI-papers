@@ -36,10 +36,25 @@ def pick_device():
     return "cpu"
 
 
-def timed(fn):
+def synchronize(device):
+    device = torch.device(device)
+    if device.type == "cuda":
+        torch.cuda.synchronize(device)
+    elif device.type == "mps":
+        torch.mps.synchronize()
+
+
+def timed(fn, device):
+    synchronize(device)
     start = time.perf_counter()
     out = fn()
+    synchronize(device)
     return out, time.perf_counter() - start
+
+
+def validate_tokenizers(target_tokenizer, draft_tokenizer):
+    if target_tokenizer.get_vocab() != draft_tokenizer.get_vocab():
+        raise ValueError("draft and target token-to-ID mappings must match")
 
 
 def main():
@@ -58,6 +73,8 @@ def main():
     ap.add_argument("--no-cache", action="store_true",
                     help="use the simple O(n^2) uncached path instead of the KV-cached one")
     args = ap.parse_args()
+    if args.max_new_tokens < 1 or args.K < 1:
+        ap.error("max-new-tokens and K must be positive")
 
     ar_fn = autoregressive_generate if args.no_cache else autoregressive_generate_cached
     spec_fn = speculative_generate if args.no_cache else speculative_generate_cached
@@ -68,6 +85,7 @@ def main():
     print(f"device: {device}  dtype: {dtype_name}")
 
     tok = AutoTokenizer.from_pretrained(args.target)
+    validate_tokenizers(tok, AutoTokenizer.from_pretrained(args.draft))
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
 
@@ -98,10 +116,10 @@ def main():
     spec_fn(target, draft, input_ids, 2, K=args.K, **gen_kwargs)
 
     print("running baseline (autoregressive, target only)...")
-    (base_ids, _), base_t = timed(run_baseline)
+    (base_ids, _), base_t = timed(run_baseline, device)
 
     print("running speculative decoding...")
-    (spec_ids, stats), spec_t = timed(run_speculative)
+    (spec_ids, stats), spec_t = timed(run_speculative, device)
 
     n = args.max_new_tokens
     print("\n" + "=" * 64)

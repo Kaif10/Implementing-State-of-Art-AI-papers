@@ -83,24 +83,14 @@ def _fit_manager_prompt(
         query=query,
     )
 
-    # If still too long (e.g., huge task_requirements), trim CU further.
-    # Keep it simple and deterministic.
-    for _ in range(5):
-        if count_tokens(prompt, enc) <= k:
-            return prompt, cu
-        # Remove another 20% of CU tokens each iteration.
+    while count_tokens(prompt, enc) > k:
         cur_tokens = len(enc.encode(cu))
-        new_tokens = max(64, int(cur_tokens * 0.8))
-        if new_tokens >= cur_tokens:
-            break
-        cu = _trim_keep_head_tail(cu, enc, new_tokens)
+        if cur_tokens == 0:
+            raise ValueError("Manager instructions and query exceed input token budget k")
+        cu = _trim_keep_head_tail(cu, enc, max(0, cur_tokens // 2))
         prompt = manager_template.format(
-            task_requirements=task_requirements.strip(),
-            final_cu=cu,
-            query=query,
+            task_requirements=task_requirements.strip(), final_cu=cu, query=query,
         )
-
-    # Last resort: return whatever we have; API may still reject if requirements are massive.
     return prompt, cu
 
 
@@ -148,6 +138,10 @@ def run_single_path(
       - final_cu
       - answer
     """
+    if k <= 0 or max_output_tokens <= 0:
+        raise ValueError("k and max_output_tokens must be positive")
+    if max_prev_cu_tokens < 0:
+        raise ValueError("max_prev_cu_tokens must be nonnegative")
     query = (query or "")
     has_query = bool(query.strip())
 
@@ -155,9 +149,6 @@ def run_single_path(
     manager_template = P.MANAGER_QUERY if has_query else P.MANAGER_NONQUERY
 
     # ---- Stage 0: chunking under a safe budget ----
-    # chunk_text() supports reserving a safety buffer for prev_cu via a function attribute.
-    # This avoids later worker prompts exceeding the model context window.
-    setattr(chunk_text, "prev_cu_token_buffer", int(prev_cu_token_buffer))
 
     chunks = chunk_text(
         x=x,
@@ -165,6 +156,7 @@ def run_single_path(
         k=k,
         worker_instruction_template=worker_template,
         enc=enc,
+        prev_cu_token_buffer=prev_cu_token_buffer,
     )
     idxs = _choose_order_indices(len(chunks), order=order, seed=seed)
 
@@ -185,6 +177,9 @@ def run_single_path(
             prev_cu=prev_cu,
             query=query,
         )
+
+        if count_tokens(worker_prompt, enc) > k:
+            raise ValueError("Worker prompt exceeds input token budget k; increase the reserved buffer")
 
         cu_i = generate(
             client,

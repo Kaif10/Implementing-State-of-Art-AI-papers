@@ -85,3 +85,15 @@ the authors' code is at <https://github.com/simplescaling/s1>.
   year={2025}
 }
 ```
+
+## Offline checks
+
+From the repository root, `python -m pytest S1_Test_Time_Scaling/tests -q`
+checks delimiter handling, extension, budget exhaustion, and invalid budgets
+using scripted outputs without downloading a model. Install `pytest` alongside
+the folder requirements. The demo illustrates budget control on one question;
+use a held-out question set to measure accuracy versus compute.
+
+`thinking_tokens` counts generated tokens, including suppressed delimiters;
+it excludes the prompt and injected `Wait` text. Segment generation currently
+reprocesses the accumulated prefix, so token count is not a latency measurement.

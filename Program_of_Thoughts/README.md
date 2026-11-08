@@ -23,12 +23,12 @@ whole paper, and that's exactly what this code does — nothing more.
   top-level assigned variable (small models often store the result under a
   descriptive name like `total_cost` and skip the final `answer =` line —
   reading that computed value is part of the PoT method, recovered via AST).
-- Compares it numerically to the GSM8K gold answer.
+- Compares normalized numeric answers exactly, including decimals, scientific notation, and fractions.
 - Reports the **true** accuracy plus a breakdown of failure modes
   (`no_code`, `error`, `timeout`, `no_answer_var`). Nothing is hidden or
   hand-tuned to look better.
 
-## Measured result (honest)
+## Example evaluation
 
 Qwen2.5-1.5B-Instruct, greedy decoding, 30 GSM8K test questions:
 
@@ -37,20 +37,16 @@ Accuracy:   15/30 = 50.0%
 Exec breakdown: {'ok': 30}
 ```
 
-All programs executed; the 15 misses are genuine reasoning errors by the small
-model (wrong formulas), not harness failures. This is expected — the PoT paper
-used far larger code models; a 1.5B model lands in this range. Use `--model
-Qwen/Qwen2.5-3B-Instruct` and a larger `--num-samples` for a stronger/steadier
-number.
+This recorded run predates the exact numeric scorer. Re-run the command below
+with the current scorer and inspect the per-example outputs in `results.jsonl`.
 
 ## Setup
 
-Requires [`uv`](https://github.com/astral-sh/uv) (PyTorch has no Python 3.14
-wheels yet, so we pin 3.12):
+Use Python 3.12. With [`uv`](https://github.com/astral-sh/uv):
 
 ```bash
 uv venv --python 3.12
-uv pip install torch transformers datasets accelerate "huggingface_hub[hf_transfer]"
+uv pip install -r requirements.txt
 ```
 
 ## Run
@@ -78,5 +74,12 @@ or large-scale use, run it inside a container, VM, or a locked-down sandbox.
 
 ## Files
 
-- `program_of_thought.py` — the entire implementation (~250 lines).
+- `program_of_thought.py` — the implementation and evaluation CLI.
 - `results.jsonl` — written on each eval run.
+
+## Offline checks
+
+```bash
+python -m pip install pytest
+python -m pytest test_scoring.py -q
+```
