@@ -1,0 +1,25 @@
+{
+  "project": "Chain_of_Agents",
+  "source_commit": "929fab42db8dd08bea70cc1501e10939b70bae07",
+  "commands": [
+    [
+      "run.py",
+      "--input_file",
+      "doc_test.txt",
+      "--task_requirements_file",
+      "req_qa.txt",
+      "--query",
+      "What is Jonas Pike's security clearance tier?",
+      "--k",
+      "1350",
+      "--debug"
+    ]
+  ],
+  "backend": "OpenAI / gpt-4o-mini",
+  "capture": "Windows Graphics Capture / terminal window only",
+  "playback": "real time, no reconstructed frames",
+  "fps": 5,
+  "frames": 111,
+  "exit_code": 0,
+  "recorded_at": "2026-11-09T16:44:55.243094+00:00"
+}

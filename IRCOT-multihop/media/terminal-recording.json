@@ -1,0 +1,25 @@
+{
+  "project": "IRCOT-multihop",
+  "source_commit": "1425b5d0ad4d33897afc81374a2e48eadf770d19",
+  "commands": [
+    [
+      "main.py",
+      "answer",
+      "--data_dir",
+      "data",
+      "--demos",
+      "demos/demos_M1_seed0.json",
+      "--question",
+      "Which river flows through the city where Albert Einstein was born?",
+      "--K",
+      "2"
+    ]
+  ],
+  "backend": "OpenAI / gpt-4o-mini",
+  "capture": "Windows Graphics Capture / terminal window only",
+  "playback": "real time, no reconstructed frames",
+  "fps": 5,
+  "frames": 148,
+  "exit_code": 0,
+  "recorded_at": "2026-11-09T16:40:16.945143+00:00"
+}

@@ -1,5 +1,13 @@
 # CAMEL (Role-Playing Agents)
 
+<!-- native-api-terminal-demo -->
+## Terminal demo
+
+![Actual terminal screen recording of CAMEL_Paper](media/terminal-demo.gif)
+
+Screen recording of the existing implementation using OpenAI `gpt-4o-mini`, at normal playback speed. The animation plays inline. Commands, source revision, and terminal output are saved in `media/`.
+
+
 Paper: [CAMEL: Communicative Agents for "Mind" Exploration of Large Language Model Society](https://arxiv.org/abs/2303.17760)
 
 In this paper, the authors  study the assistant-user scenario, where a preliminary idea is given at the start. Agents will conceptualize the idea into a specific task and complete it autonomously through conversations.

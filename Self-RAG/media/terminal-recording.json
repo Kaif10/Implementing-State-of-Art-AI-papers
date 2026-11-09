@@ -1,0 +1,36 @@
+{
+  "project": "Self-RAG",
+  "source_commit": "1425b5d0ad4d33897afc81374a2e48eadf770d19",
+  "commands": [
+    [
+      "main.py",
+      "ingest",
+      "--docs",
+      "kb",
+      "--out",
+      "D:\\Implementing-State-of-Art-AI-papers\\.venv\\api-screen-scratch\\Self-RAG\\index"
+    ],
+    [
+      "main.py",
+      "ask",
+      "--index",
+      "D:\\Implementing-State-of-Art-AI-papers\\.venv\\api-screen-scratch\\Self-RAG\\index",
+      "--top-k",
+      "3",
+      "--per-step-passages",
+      "2",
+      "--max-steps",
+      "3",
+      "Which company services require MFA?"
+    ]
+  ],
+  "backend": "OpenAI / gpt-4o-mini",
+  "capture": "Windows Graphics Capture / terminal window only",
+  "playback": "real time, no reconstructed frames",
+  "fps": 5,
+  "frames": 87,
+  "exit_code": 0,
+  "recorded_at": "2026-11-09T16:42:27.304524+00:00",
+  "embedding_model": "text-embedding-3-large",
+  "embedding_dimensions": 1024
+}

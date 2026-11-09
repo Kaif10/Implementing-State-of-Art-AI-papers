@@ -1,5 +1,13 @@
 # Reflexion (minimal)
 
+<!-- native-api-terminal-demo -->
+## Terminal demo
+
+![Actual terminal screen recording of Reflexion_Paper](media/terminal-demo.gif)
+
+Screen recording of the existing implementation using OpenAI `gpt-4o-mini`, at normal playback speed. The animation plays inline. Commands, source revision, and terminal output are saved in `media/`.
+
+
 Paper: [Reflexion: Language Agents with Verbal Reinforcement Learning](https://arxiv.org/abs/2303.11366)
 
 ## Algorithmic flow (paper)

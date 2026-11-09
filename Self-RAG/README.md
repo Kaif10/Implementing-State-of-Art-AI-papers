@@ -1,5 +1,13 @@
 # Self-RAG: Learning to Retrieve, Generate, and Critique through Self-Reflection
 
+<!-- native-api-terminal-demo -->
+## Terminal demo
+
+![Actual terminal screen recording of Self-RAG](media/terminal-demo.gif)
+
+Screen recording of the existing implementation using OpenAI `gpt-4o-mini` and `text-embedding-3-large` for indexing, at normal playback speed. The animation plays inline. Commands, source revision, and terminal output are saved in `media/`.
+
+
 An inspired implementation of [Self-RAG](https://arxiv.org/abs/2310.11511) using off-the-shelf LLM APIs.
 
 ## Paper methodology (in plain English)

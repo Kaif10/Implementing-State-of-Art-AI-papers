@@ -1,0 +1,25 @@
+{
+  "project": "FLARE-Active_RAG",
+  "source_commit": "929fab42db8dd08bea70cc1501e10939b70bae07",
+  "commands": [
+    [
+      "main.py",
+      "answer",
+      "--data_dir",
+      "data",
+      "--question",
+      "What is quantum computing and how does it differ from classical computing?",
+      "--top_k",
+      "2",
+      "--max_steps",
+      "2"
+    ]
+  ],
+  "backend": "OpenAI / gpt-4o-mini",
+  "capture": "Windows Graphics Capture / terminal window only",
+  "playback": "real time, no reconstructed frames",
+  "fps": 5,
+  "frames": 91,
+  "exit_code": 0,
+  "recorded_at": "2026-11-09T16:45:14.590137+00:00"
+}

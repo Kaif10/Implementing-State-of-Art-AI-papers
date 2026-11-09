@@ -1,0 +1,22 @@
+{
+  "project": "CAMEL_Paper",
+  "source_commit": "1425b5d0ad4d33897afc81374a2e48eadf770d19",
+  "commands": [
+    [
+      "run.py",
+      "--mode",
+      "code",
+      "--task",
+      "Write a Python function add(a, b) and demonstrate add(2, 3).",
+      "--max-messages",
+      "6"
+    ]
+  ],
+  "backend": "OpenAI / gpt-4o-mini",
+  "capture": "Windows Graphics Capture / terminal window only",
+  "playback": "real time, no reconstructed frames",
+  "fps": 5,
+  "frames": 108,
+  "exit_code": 0,
+  "recorded_at": "2026-11-09T16:37:01.270473+00:00"
+}

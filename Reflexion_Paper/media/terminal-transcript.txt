@@ -1,0 +1,105 @@
+{
+  "responsePlan": {
+    "timeBlocks": {
+      "T-24": {
+        "Objective": "Prepare the community for potential evacuation.",
+        "Actions": [
+          "Issue a public advisory on hurricane preparedness.",
+          "Set up temporary shelters in designated safe zones.",
+          "Mobilize local volunteers for assistance."
+        ],
+        "LeadAgency": "Emergency Management Agency"
+      },
+      "T-18": {
+        "Objective": "Enhance resource allocation and readiness.",
+        "Actions": [
+          "Inventory medical supplies and emergency resources.",
+          "Coordinate with regional agencies for additional support.",
+          "Establish communication with local hospitals."
+        ],
+        "LeadAgency": "Public Health Department"
+      },
+      "T-12": {
+        "Objective": "Implement evacuation orders if necessary.",
+        "Actions": [
+          "Clear non-essential personnel from low-lying areas.",
+          "Provide transportation to shelters for vulnerable populations.",
+          "Continue public information dissemination regarding evacuation routes."
+        ],
+        "LeadAgency": "Department of Transportation"
+      },
+      "T-6": {
+        "Objective": "Finalize preparations for landfall.",
+        "Actions": [
+          "Secure all public facilities and shelters.",
+          "Communicate final safety instructions to the public.",
+          "Review and confirm staffing at all shelters and command centers."
+        ],
+        "LeadAgency": "City Operations Center"
+      },
+      "T+0": {
+        "Objective": "Respond to immediate impacts of the hurricane.",
+        "Actions": [
+          "Activate emergency response teams to assess damage.",
+          "Establish a command center for coordination.",
+          "Begin search and rescue operations if necessary."
+        ],
+        "LeadAgency": "Fire Department"
+      },
+      "T+6": {
+        "Objective": "Assess damage and provide initial aid to affected areas.",
+        "Actions": [
+          "Deploy medical personnel to critical areas.",
+          "Set up additional shelters if needed.",
+          "Communicate status updates to the public."
+        ],
+        "LeadAgency": "Emergency Medical Services"
+      },
+      "T+12": {
+        "Objective": "Continue recovery efforts and resource distribution.",
+        "Actions": [
+          "Distribute food and water supplies to shelters.",
+          "Initiate restoration of power and transportation services.",
+          "Evaluate long-term recovery strategies."
+        ],
+        "LeadAgency": "Department of Community Services"
+      },
+      "T+18": {
+        "Objective": "Evaluate response effectiveness and plan next steps.",
+        "Actions": [
+          "Conduct debriefing sessions with all agencies involved.",
+          "Gather community feedback on response efforts.",
+          "Prepare a report for future planning and improvements."
+        ],
+        "LeadAgency": "City Planning Department"
+      }
+    },
+    "decisionTriggers": [
+      "IF the hurricane's projected wind speed exceeds 100 mph THEN issue mandatory evacuation orders for vulnerable areas.",
+      "IF shelters reach full capacity THEN activate additional emergency shelter sites.",
+      "IF significant flooding occurs THEN initiate search and rescue operations in affected neighborhoods."
+    ],
+    "resourceTable": {
+      "Medical": 30,
+      "Shelter": 50,
+      "Power": 20,
+      "Transport": 20,
+      "Total": 120
+    },
+    "communicationPlan": {
+      "channels": [
+        "Emergency Broadcast System",
+        "Social Media Updates",
+        "Dedicated Hotlines for Information",
+        "Community Alert Text Messaging"
+      ]
+    },
+    "riskMitigation": [
+      "Risk: Inadequate shelter capacity. Mitigation: Pre-emptively set up additional shelters based on population estimates.",
+      "Risk: Communication failures. Mitigation: Regularly test communication channels prior to emergencies.",
+      "Risk: Limited medical response. Mitigation: Coordinate with regional hospitals for backup support."
+    ]
+  }
+}
+Final evaluator decision: True
+Attempts: 2

@@ -1,0 +1,17 @@
+{
+  "project": "Reflexion_Paper",
+  "source_commit": "929fab42db8dd08bea70cc1501e10939b70bae07",
+  "commands": [
+    [
+      "-c",
+      "import runpy; r=runpy.run_path('core.py',run_name='__main__'); print('Final evaluator decision:',r['ok']); print('Attempts:',len(r['attempts'])); raise SystemExit(0 if r['ok'] else 2)"
+    ]
+  ],
+  "backend": "OpenAI / gpt-4o-mini",
+  "capture": "Windows Graphics Capture / terminal window only",
+  "playback": "real time, no reconstructed frames",
+  "fps": 5,
+  "frames": 231,
+  "exit_code": 0,
+  "recorded_at": "2026-11-09T16:46:01.803323+00:00"
+}

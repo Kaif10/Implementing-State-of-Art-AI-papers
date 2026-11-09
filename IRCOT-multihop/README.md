@@ -1,5 +1,13 @@
 # IRCOT (Iterative Retrieval Chain-of-Thought) Implementation
 
+<!-- native-api-terminal-demo -->
+## Terminal demo
+
+![Actual terminal screen recording of IRCOT-multihop](media/terminal-demo.gif)
+
+Screen recording of the existing implementation using OpenAI `gpt-4o-mini`, at normal playback speed. The animation plays inline. Commands, source revision, and terminal output are saved in `media/`.
+
+
 This implementation follows the IRCOT paper approach for multi-hop question answering by interleaving retrieval steps with chain-of-thought reasoning.
 
 ## Overview

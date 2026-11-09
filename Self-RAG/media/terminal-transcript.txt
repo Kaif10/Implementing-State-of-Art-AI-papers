@@ -1,0 +1,5 @@
+embedded 3/3
+
+Saved index -> D:\Implementing-State-of-Art-AI-papers\.venv\api-screen-scratch\Self-RAG\index
+chunks=3 dim=1024
+MFA is required for corporate email, source code hosting, cloud console access, and Aurora admin console access. [security_policy.md:0]

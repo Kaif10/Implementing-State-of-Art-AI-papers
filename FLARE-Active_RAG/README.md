@@ -1,5 +1,13 @@
 # FLARE: Forward-Looking Active REtrieval-Augmented Generation
 
+<!-- native-api-terminal-demo -->
+## Terminal demo
+
+![Actual terminal screen recording of FLARE-Active_RAG](media/terminal-demo.gif)
+
+Screen recording of the existing implementation using OpenAI `gpt-4o-mini`, at normal playback speed. The animation plays inline. Commands, source revision, and terminal output are saved in `media/`.
+
+
 API-based implementation of the FLARE retrieval loop (https://arxiv.org/abs/2305.06983).
 
 ## How FLARE Works (Paper Algorithm)

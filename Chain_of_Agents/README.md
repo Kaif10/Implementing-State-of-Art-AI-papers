@@ -1,5 +1,13 @@
 # Chain-of-Agents (CoA)
 
+<!-- native-api-terminal-demo -->
+## Terminal demo
+
+![Actual terminal screen recording of Chain_of_Agents](media/terminal-demo.gif)
+
+Screen recording of the existing implementation using OpenAI `gpt-4o-mini`, at normal playback speed. The animation plays inline. Commands, source revision, and terminal output are saved in `media/`.
+
+
 Paper: [Chain of Agents: Large Language Models Collaborating on Long-Context Tasks](https://arxiv.org/abs/2406.02818)
 
 A pretty interesting paper that helps solve a big problem that a single LLM might face while dealing huge context-> needle in a haystack, to a great extent
