@@ -147,6 +147,7 @@ def main():
     args = parser.parse_args()
     raw = args.transcript.read_bytes()
     transcript = raw.decode("utf-16" if raw.startswith((b"\xff\xfe", b"\xfe\xff")) else "utf-8-sig")
+    transcript = transcript.replace("\r\n", "\n").replace("\r", "")
     if "All selected project suites passed." not in transcript or re.search(r"\b(?:failed|ERRORS)\b", transcript):
         raise SystemExit("A successful full offline test transcript is required")
     evidence = {"source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
