@@ -141,7 +141,7 @@ def actor(llm: LLM, task: Task, memory: list[str]) -> tuple[str, str]:
         "You are the Actor, an expert problem solver. Follow the task and constraints exactly.",
         user,
         temperature=0.7,
-        max_tokens=500,
+        max_tokens=2000,
         json_object=True,
     )
     obj = parse_json_object(raw, required_keys=("answer", "trajectory"))

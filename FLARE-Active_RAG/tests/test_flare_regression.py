@@ -13,6 +13,38 @@ spec.loader.exec_module(flare)
 
 
 class ConfidenceTests(unittest.TestCase):
+    def make_client(self, responses):
+        calls = []
+        replies = iter(responses)
+        def create(**kwargs):
+            calls.append(kwargs)
+            text, finish_reason = next(replies)
+            return SimpleNamespace(choices=[SimpleNamespace(
+                message=SimpleNamespace(content=text), finish_reason=finish_reason, logprobs=None)])
+        return SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create))), calls
+
+    def test_token_limited_fragment_is_retried_before_finalization(self):
+        client, calls = self.make_client([("Quantum computing uses", "length"),
+                                          ("Quantum computing uses qubits.", "stop")])
+        model = flare.FLARE(client, SimpleNamespace(similarity_top_k=1))
+        text, _ = model._call_llm("Question", max_tokens=50)
+        self.assertEqual(text, "Quantum computing uses qubits.")
+        self.assertGreater(calls[1]["max_tokens"], calls[0]["max_tokens"])
+
+    def test_complete_first_sentence_does_not_retry_a_discarded_tail(self):
+        client, calls = self.make_client([("Known fact. Later unfinished", "length")])
+        model = flare.FLARE(client, SimpleNamespace(similarity_top_k=1))
+        text, _ = model._call_llm("Question", max_tokens=50)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(flare.sentence_confidence(text, None, .4)[0], "Known fact.")
+
+    def test_repeated_truncation_is_not_silently_punctuated(self):
+        client, calls = self.make_client([("Still incomplete", "length"), ("Still incomplete", "length")])
+        model = flare.FLARE(client, SimpleNamespace(similarity_top_k=1))
+        with self.assertRaisesRegex(ValueError, "token limit"):
+            model._call_llm("Question", max_tokens=50)
+        self.assertEqual(len(calls), 2)
+
     def test_later_uncertain_sentence_does_not_trigger_retrieval(self):
         sentence, confidence, query = flare.sentence_confidence(
             "Known fact. Guess later.", [(b"Known fact.", .9), (b" Guess later.", .01)], .4

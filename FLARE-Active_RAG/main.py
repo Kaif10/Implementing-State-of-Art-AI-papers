@@ -93,6 +93,23 @@ class FLARE:
         else:
             self.top_k = 5
     
+    def _request_sentence(self, prompt, max_tokens, temperature, get_logprobs):
+        """Retry a token-limited fragment once instead of finalizing it as a sentence."""
+        for budget in (max_tokens, max_tokens * 2):
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=temperature,
+                max_tokens=budget,
+                logprobs=get_logprobs,
+                top_logprobs=1 if get_logprobs else None,
+            )
+            choice = response.choices[0]
+            text = choice.message.content or ""
+            if choice.finish_reason != "length" or re.search(r"[.!?](?:\s|$)", text):
+                return response
+        raise ValueError("Generation reached its token limit before completing a sentence")
+
     def _call_llm(
         self,
         prompt: str,
@@ -110,14 +127,7 @@ class FLARE:
         
         try:
             # Try chat completions with logprobs (GPT-4 and newer models support this)
-            r = self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=temp,
-                max_tokens=max_tokens,
-                logprobs=get_logprobs,
-                top_logprobs=1 if get_logprobs else None,
-            )
+            r = self._request_sentence(prompt, max_tokens, temp, get_logprobs)
             response_text = r.choices[0].message.content or ""
             
             token_probs = None
@@ -144,12 +154,7 @@ class FLARE:
             if not get_logprobs or "logprob" not in str(e).lower():
                 raise
             try:
-                r = self.client.chat.completions.create(
-                    model=self.model,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=temp,
-                    max_tokens=max_tokens,
-                )
+                r = self._request_sentence(prompt, max_tokens, temp, False)
                 response_text = r.choices[0].message.content or ""
                 return response_text, None
             except Exception:
