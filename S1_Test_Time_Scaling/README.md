@@ -1,6 +1,5 @@
 # s1: Budget Forcing for Test-Time Scaling
 
-
 A tiny, honest reimplementation of the core inference-time idea from
 **[s1: Simple Test-Time Scaling](https://arxiv.org/abs/2501.19393)** (Muennighoff et al., 2025).
 

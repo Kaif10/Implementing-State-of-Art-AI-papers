@@ -1,15 +1,5 @@
 # CAMEL (Role-Playing Agents)
 
-<!-- project-working-demo -->
-## Working demo
-
-![CAMEL: task specification and role-playing agents — actual recorded run](media/demo.gif)
-
-Animated terminal transcript of a real local Qwen2.5-0.5B-Instruct run on CPU. The animation plays here automatically; idle time is shortened.
-
-To rerun, first install the local demo dependencies with `python -m pip install -r ../scripts/local-demo-requirements.txt`. Then, from this folder, run `python demo.py`. The full output and recording details are saved in `media/`.
-
-
 Paper: [CAMEL: Communicative Agents for "Mind" Exploration of Large Language Model Society](https://arxiv.org/abs/2303.17760)
 
 In this paper, the authors  study the assistant-user scenario, where a preliminary idea is given at the start. Agents will conceptualize the idea into a specific task and complete it autonomously through conversations.

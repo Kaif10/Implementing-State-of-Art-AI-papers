@@ -1,15 +1,5 @@
 # Speculative Decoding — from scratch, end to end
 
-<!-- project-working-demo -->
-## Working demo
-
-![Speculative decoding: cached output agreement — actual recorded run](media/demo.gif)
-
-Animated terminal transcript of a real local Qwen2.5-0.5B-Instruct run on CPU; same-checkpoint correctness demonstration. The animation plays here automatically; idle time is shortened.
-
-To rerun, first install the local demo dependencies with `python -m pip install -r ../scripts/local-demo-requirements.txt`. Then, from this folder, run `python demo.py`. The full output and recording details are saved in `media/`.
-
-
 A readable implementation of the core algorithm from
 **["Fast Inference from Transformers via Speculative Decoding"](https://arxiv.org/abs/2211.17192)**
 (Leviathan, Kalman & Matias, ICML 2023; concurrently
