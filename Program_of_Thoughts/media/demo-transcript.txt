@@ -1,0 +1,14 @@
+Program of Thoughts / live generation, Python execution and exact numeric grading
+Question: There are 3 boxes with 4 pencils each. How many pencils are there in total?
+Expected answer: 12
+[setup] loading Qwen/Qwen2.5-0.5B-Instruct on cpu (torch.float32) ...
+
+GENERATED PROGRAM:
+pencils_initial = 3
+pencils_per_box = 4
+total_pencils = pencils_initial * pencils_per_box
+
+Interpreter output: 12
+Execution: ok
+Correct: True
+DEMO COMPLETE

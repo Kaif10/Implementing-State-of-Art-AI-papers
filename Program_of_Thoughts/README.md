@@ -1,5 +1,15 @@
 # Program of Thoughts (PoT) — minimal honest implementation
 
+<!-- project-working-demo -->
+## Working demo
+
+![Program of Thoughts: generate and execute Python — actual recorded run](media/demo.gif)
+
+Live local Qwen2.5-0.5B-Instruct run on CPU. The animation plays here automatically; idle time is shortened.
+
+To rerun, first install the local demo dependencies with `python -m pip install -r ../scripts/local-demo-requirements.txt`. Then, from this folder, run `python demo.py`. The full output and recording details are saved in `media/`.
+
+
 A small, faithful end-to-end implementation of **Program of Thoughts prompting**
 ([Chen et al., 2022](https://arxiv.org/abs/2211.12588)) using an open-source
 Qwen2.5 Instruct model (1.5B by default, 3B optional).

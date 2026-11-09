@@ -1,5 +1,15 @@
 # s1: Budget Forcing for Test-Time Scaling
 
+<!-- project-working-demo -->
+## Working demo
+
+![s1: control a reasoning model's thinking budget — actual recorded run](media/demo.gif)
+
+Live local DeepSeek-R1-Distill-Qwen-1.5B run on CPU with dynamic int8 linear layers. The animation plays here automatically; idle time is shortened.
+
+To rerun, first install the local demo dependencies with `python -m pip install -r ../scripts/local-demo-requirements.txt`. Then, from this folder, run `python demo_recording.py`. The full output and recording details are saved in `media/`.
+
+
 A tiny, honest reimplementation of the core inference-time idea from
 **[s1: Simple Test-Time Scaling](https://arxiv.org/abs/2501.19393)** (Muennighoff et al., 2025).
 

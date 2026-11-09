@@ -1,0 +1,33 @@
+s1 budget forcing / live DeepSeek-R1-Distill-Qwen-1.5B / CPU / dynamic int8 linear layers
+Question: What is 12 times 13? Give the numeric answer.
+[s1] loading deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B on cpu (torch.bfloat16) ...
+Preparing dynamic int8 linear layers for CPU inference...
+
+RUN / num_ignore=0 / thinking cap=192 tokens
+THINKING:
+To calculate 12 multiplied by 13, I can use the standard multiplication method. I'll break down 13 into 10 and 3, then multiply each by 12 separately. This gives me 120 and 36. Adding these two results together, I get the final answer of 156.
+ANSWER:
+To find the product of 12 and 13, you can use the standard multiplication method:
+
+\[
+\begin{array}{r}
+\phantom{0}12 \\
+Thinking tokens: 73
+Waits injected: 0
+Budget cap reached: False
+
+RUN / num_ignore=1 / thinking cap=192 tokens
+
+[s1] forcing more thought (wait #1) ...
+THINKING:
+To calculate 12 multiplied by 13, I can use the standard multiplication method. I'll break down 13 into 10 and 3, then multiply each by 12 separately. This gives me 120 and 36. Adding these two results together, I get the final answer of 156.
+ Wait, let me verify that. 12 times 10 is indeed 120, and 12 times 3 is 36. Adding 120 and 36 gives me 156. So, the correct result is 156.
+ANSWER:
+To find the product of 12 and 13, we can use the standard multiplication method.
+
+\[
+12 \times 13 = 12 \times (10
+Thinking tokens: 133
+Waits injected: 1
+Budget cap reached: False
+DEMO COMPLETE / observed behavior for this question and model

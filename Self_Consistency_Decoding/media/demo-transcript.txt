@@ -1,0 +1,16 @@
+Model: Qwen/Qwen2.5-0.5B-Instruct / CPU / 3 sampled reasoning paths
+Question: How many minutes are in 3.75 hours?
+
+PATH 1 / excerpt through first answer: 3.75 * 60 = 225. The answer is 225
+PARSED ANSWER: 225
+
+PATH 2 / excerpt through first answer: 1080/4 = 270 minutes. The answer is 270
+PARSED ANSWER: 270
+
+PATH 3 / excerpt through first answer: 3.75 * 60 = 225. The answer is 225
+PARSED ANSWER: 225
+
+VOTES: {'225': 2, '270': 1}
+FINAL: 225
+Parsed paths: 3/3
+Full generated paths: media/raw-samples.json

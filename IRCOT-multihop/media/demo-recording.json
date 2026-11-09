@@ -1,0 +1,116 @@
+{
+  "title": "IRCoT: interleave reasoning with retrieval",
+  "mode": "Live local model / actual recorded execution / CPU",
+  "project": "IRCOT-multihop",
+  "command": "python.exe demo.py",
+  "source_commit": "225829c8c25a4fd7ef189fb80ab7bba3a3cd8fad",
+  "recorded_at": "2026-11-09T14:19:39.562443+00:00",
+  "elapsed_seconds": 87.015,
+  "exit_code": 0,
+  "events": [
+    {
+      "seconds": 8.343,
+      "line": "LOCAL BACKEND: Qwen/Qwen2.5-0.5B-Instruct / CPU / real generation"
+    },
+    {
+      "seconds": 18.578,
+      "line": "IRCoT / live reasoning steps interleaved with local BM25 retrieval"
+    },
+    {
+      "seconds": 18.578,
+      "line": "QUESTION: Which river flows through the city where Albert Einstein was born?"
+    },
+    {
+      "seconds": 18.578,
+      "line": "RETRIEVE: Which river flows through the city where Albert Einstein was born?"
+    },
+    {
+      "seconds": 18.578,
+      "line": "  PASSAGE: wikipedia_ulm.txt"
+    },
+    {
+      "seconds": 18.578,
+      "line": "  PASSAGE: wikipedia_albert_einstein.txt"
+    },
+    {
+      "seconds": 18.656,
+      "line": "MODEL CALL 1 / 1071 input tokens"
+    },
+    {
+      "seconds": 38.156,
+      "line": "MODEL CALL 1 / 31 generated tokens"
+    },
+    {
+      "seconds": 38.156,
+      "line": "RETRIEVE: The city where Albert Einstein was born, Ulm, is located on the Danube River."
+    },
+    {
+      "seconds": 38.187,
+      "line": "  PASSAGE: wikipedia_ulm.txt"
+    },
+    {
+      "seconds": 38.187,
+      "line": "  PASSAGE: wikipedia_albert_einstein.txt"
+    },
+    {
+      "seconds": 38.218,
+      "line": "MODEL CALL 2 / 1090 input tokens"
+    },
+    {
+      "seconds": 49.062,
+      "line": "MODEL CALL 2 / 17 generated tokens"
+    },
+    {
+      "seconds": 49.062,
+      "line": "RETRIEVE: Ulm is located on the Danube River, which flows through the city."
+    },
+    {
+      "seconds": 49.062,
+      "line": "  PASSAGE: wikipedia_ulm.txt"
+    },
+    {
+      "seconds": 49.062,
+      "line": "  PASSAGE: wikipedia_quantum_mechanics.txt"
+    },
+    {
+      "seconds": 50.312,
+      "line": "MODEL CALL 3 / 1356 input tokens"
+    },
+    {
+      "seconds": 63.265,
+      "line": "MODEL CALL 3 / 20 generated tokens"
+    },
+    {
+      "seconds": 63.265,
+      "line": "RETRIEVE: Ulm is located on the Danube River, which flows through the city of Ulm."
+    },
+    {
+      "seconds": 63.265,
+      "line": "  PASSAGE: wikipedia_ulm.txt"
+    },
+    {
+      "seconds": 63.265,
+      "line": "  PASSAGE: wikipedia_albert_einstein.txt"
+    },
+    {
+      "seconds": 63.265,
+      "line": "MODEL CALL 4 / 1321 input tokens"
+    },
+    {
+      "seconds": 81.812,
+      "line": "MODEL CALL 4 / 48 generated tokens"
+    },
+    {
+      "seconds": 81.812,
+      "line": ""
+    },
+    {
+      "seconds": 81.812,
+      "line": "FINAL ANSWER: According to the Wikipedia entry for Ulm, the city is located in the German state of Baden-Württemberg, situated on the Danube River. Therefore, the Danube River flows through the city of Ulm."
+    },
+    {
+      "seconds": 81.812,
+      "line": "DEMO COMPLETE"
+    }
+  ]
+}

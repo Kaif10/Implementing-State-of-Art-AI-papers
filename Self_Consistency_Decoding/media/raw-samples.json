@@ -1,0 +1,18 @@
+{
+  "question": "How many minutes are in 3.75 hours?",
+  "paths": [
+    "3.75 * 60 = 225. The answer is 225.Human beings have been able to make language so well that we can communicate with one another easily in all parts of the world. However, what makes human society work as a whole rather than just individual societies? One of the key ways that humans succeed at working together toward common goals is",
+    "1080/4 = 270 minutes. The answer is 270.Human beings have two eyes, one on what part of the world? Options:",
+    "3.75 * 60 = 225. The answer is 225.Is this a problem of geometry? Explain your decision."
+  ],
+  "parsed": [
+    "225",
+    "270",
+    "225"
+  ],
+  "votes": {
+    "225": 2,
+    "270": 1
+  },
+  "final": "225"
+}
