@@ -4,12 +4,6 @@ Readable Python implementations of research ideas in LLM inference, reasoning,
 retrieval, and agent coordination. Each project makes its core algorithm explicit
 and includes paper-specific notes and runnable examples.
 
-## Video walkthrough
-
-[![Watch the 48-second repository walkthrough](docs/media/walkthrough-preview.jpg)](https://raw.githubusercontent.com/Kaif10/Implementing-State-of-Art-AI-papers/master/docs/media/repository-walkthrough.mp4)
-
-[Watch the video](https://raw.githubusercontent.com/Kaif10/Implementing-State-of-Art-AI-papers/master/docs/media/repository-walkthrough.mp4) · 48 seconds · Captioned, no audio. Covers the 12 implementations, source excerpts, and recorded offline test results.
-
 ## Start here
 
 - **[Speculative decoding](Speculative_Decoding)**: draft/verify sampling, KV-cache
