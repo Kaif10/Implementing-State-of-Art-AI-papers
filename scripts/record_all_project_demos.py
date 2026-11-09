@@ -13,7 +13,6 @@ PROJECTS = {
     "Self_Consistency_Decoding": ("Self-consistency: sample reasoning paths and vote", "demo.py"),
     "Program_of_Thoughts": ("Program of Thoughts: generate and execute Python", "demo.py"),
     "Speculative_Decoding": ("Speculative decoding: cached output agreement", "demo.py"),
-    "S1_Test_Time_Scaling": ("s1: control a reasoning model's thinking budget", "demo_recording.py"),
 }
 
 

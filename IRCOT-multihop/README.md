@@ -5,7 +5,7 @@
 
 ![IRCoT: interleave reasoning with retrieval — actual recorded run](media/demo.gif)
 
-Live local Qwen2.5-0.5B-Instruct run on CPU. The animation plays here automatically; idle time is shortened.
+Animated terminal transcript of a real local Qwen2.5-0.5B-Instruct run on CPU. The animation plays here automatically; idle time is shortened.
 
 To rerun, first install the local demo dependencies with `python -m pip install -r ../scripts/local-demo-requirements.txt`. Then, from this folder, run `python demo.py`. The full output and recording details are saved in `media/`.
 
